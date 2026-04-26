@@ -85,7 +85,7 @@ namespace DataMatrixLib
     public static class DataMatrixConvert
     {
         static SortedDictionary<float, int> mapPeakInfo;
-        public static bool Decode(Mat srcImage, ref Mat DstImg, int simbol, int ithreshold = -1)
+        public static bool Decode(Mat srcImage, ref Mat DstImg, int simbol = 0, int ithreshold = -1)
         {
             try
             {
