@@ -1,0 +1,14 @@
+.vs
+bin/
+config/
+*.opensdf
+*.sdf
+*.db
+obj
+packages
+ipch
+dump
+*.zip
+db
+*.bak
+log
