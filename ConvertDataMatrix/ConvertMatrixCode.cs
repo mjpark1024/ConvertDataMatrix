@@ -420,7 +420,7 @@ namespace DataMatrixLib
                                 multRow = (int)Math.Ceiling((double)(numerator / denominator));
                             }
                             Cv2.Resize(CrossLineImg, CrossLineImg, new Size(300 * multColum, 300 * multRow), 0, 0, InterpolationFlags.Linear);
-                            Cv2.ImWrite("D:\\cross.png", CrossLineImg);
+                            //Cv2.ImWrite("D:\\cross.png", CrossLineImg);
                             //////////////////////////////////////////////////////
                             //MatRoiImgBiLine                        
                             if (!bRetry)
@@ -834,7 +834,6 @@ namespace DataMatrixLib
                         new Point(BorderLength, i),
                         new Point(Byimg.Cols - 1 - BorderLength, i),
                         new Scalar(PixelData), 1);
-                    //Cv2.ImWrite("D:\\originmake1.png", Byimg);
                     width = true;
                 }
             }
@@ -886,7 +885,6 @@ namespace DataMatrixLib
                         new Point(BorderLength, i),
                         new Point(Byimg.Cols - 1 - BorderLength, i),
                         new Scalar(PixelData), 1);
-                    //Cv2.ImWrite("D:\\originmake2.png", Byimg);
                     width = true;
                 }
             }
@@ -938,7 +936,6 @@ namespace DataMatrixLib
                         new Point(i, BorderLength),
                         new Point(i, Byimg.Rows - 1 - BorderLength),
                         new Scalar(PixelData), 1);
-                    //Cv2.ImWrite("D:\\originmake3.png", Byimg);
                     height = true;
                 }
             }
@@ -990,7 +987,6 @@ namespace DataMatrixLib
                         new Point(i, BorderLength),
                         new Point(i, Byimg.Rows - 1 - BorderLength),
                         new Scalar(PixelData), 1);
-                    //Cv2.ImWrite("D:\\originmake4.png", Byimg);
                     height = true;
                 }
             }
