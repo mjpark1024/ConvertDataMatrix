@@ -1,9 +1,11 @@
-﻿using System;
+﻿using OpenCvSharp;
+using OpenCvSharp.Extensions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using OpenCvSharp;
+using ZXing;
 
 namespace DataMatrixLib
 {
@@ -84,8 +86,21 @@ namespace DataMatrixLib
     }
     public static class DataMatrixConvert
     {
+        static ZXing.IBarcodeReader zxing_reader = new BarcodeReader()
+        {
+            AutoRotate = true,
+            TryInverted = true,
+            Options = new ZXing.Common.DecodingOptions()
+            {
+                TryHarder = true,
+                PossibleFormats = new List<BarcodeFormat>()
+                {
+                    BarcodeFormat.DATA_MATRIX
+                }
+            }
+        };
         static SortedDictionary<float, int> mapPeakInfo;
-        public static bool Decode(Mat srcImage, ref Mat DstImg, int simbol, int ithreshold = -1)
+        public static string Decode(Mat srcImage, ref Mat DstImg, double Res, int simbol = 0, int ithreshold = -1)
         {
             try
             {
@@ -132,89 +147,119 @@ namespace DataMatrixLib
                 ListMatRoiImg.Clear();
                 bool AutoSizeChk = true;
                 int iMatrixCnt = 16;
+                int MinSizeFilter = Convert.ToInt32(1600 / Res);
 
                 for (int i = 0; i < 5; i++)
                 {
-                    if (i == 0) //이진화
+                    for (int z = 0; z < 10; z++)
                     {
-                        if (ithreshold != -1)
-                            Cv2.Threshold(image_gray, image_bi, ithreshold, 255, ThresholdTypes.Binary);
-                        else//OTSU 알고리즘
-                            Cv2.Threshold(image_gray, image_bi, 0, 255, ThresholdTypes.Binary | ThresholdTypes.Otsu);
-                        Cv2.Dilate(image_bi, image_bi, mask, new Point(-1, -1), 1, BorderTypes.Replicate); //노이즈 제거
-                        Cv2.Erode(image_bi, image_bi, mask, new Point(-1, -1), 1, BorderTypes.Replicate); //노이즈 제거     
-                    }
-                    else if (i == 1) //(첫번째 이진화 실패할 경우 반전)
-                    {
-                        bReverse = true;
-                        if (ithreshold != -1)
-                            Cv2.Threshold(image_gray, image_bi, ithreshold, 255, ThresholdTypes.BinaryInv);
-                        else//OTSU 알고리즘
-                            Cv2.Threshold(image_gray, image_bi, 0, 255, ThresholdTypes.BinaryInv | ThresholdTypes.Otsu);
-                        Cv2.Erode(image_bi, image_bi, mask, new Point(-1, -1), 1, BorderTypes.Replicate); //노이즈 제거  
-                        Cv2.Dilate(image_bi, image_bi, mask, new Point(-1, -1), 1, BorderTypes.Replicate); //노이즈 제거       
-                    }
-                    else if (i == 2) //(첫번째 이진화 실패할 경우 반전)
-                    {
-                        bReverse = false;
-                        Cv2.Threshold(image_gray, image_bi, 150, 255, ThresholdTypes.Binary);
-                        Cv2.Dilate(image_bi, image_bi, mask, new Point(-1, -1), 1, BorderTypes.Replicate); //노이즈 제거
-                        Cv2.Erode(image_bi, image_bi, mask, new Point(-1, -1), 1, BorderTypes.Replicate); //노이즈 제거    
-                    }
-
-                    else if (i == 3) //(첫번째 이진화 실패할 경우 반전)
-                    {
-                        bReverse = true;
-                        Cv2.Threshold(image_gray, image_bi, 150, 255, ThresholdTypes.BinaryInv);
-                        Cv2.Dilate(image_bi, image_bi, mask, new Point(-1, -1), 1, BorderTypes.Replicate); //노이즈 제거
-                        Cv2.Erode(image_bi, image_bi, mask, new Point(-1, -1), 1, BorderTypes.Replicate); //노이즈 제거    
-                    }
-                    else if (i == 4) //(첫번째 이진화 실패할 경우 반전)
-                    {
-                        bReverse = false;
-                        Cv2.GaussianBlur(image_gray, image_gray, new Size(3, 3), 0);
-                        Cv2.Canny(image_gray, image_bi, 0, 50, 3);
-                    }
-
-                    Mat cent = new Mat();
-                    label = Cv2.ConnectedComponentsWithStats(image_bi, img_label, stats, centroids, PixelConnectivity.Connectivity8, MatType.CV_32S);
-
-                    int iCutSize = 1;
-                    //if (!AutoSizeChk) iCutSize = 0;
-
-                    int area, left, top, width, height;
-                    for (int j = 1; j < label; j++)
-                    {
-                        left = stats.At<int>(j, (int)ConnectedComponentsTypes.Left);
-                        top = stats.At<int>(j, (int)ConnectedComponentsTypes.Top);
-                        width = stats.At<int>(j, (int)ConnectedComponentsTypes.Width);
-                        height = stats.At<int>(j, (int)ConnectedComponentsTypes.Height);
-                        area = stats.At<int>(j, (int)ConnectedComponentsTypes.Area);
-
-                        // 찾은 덩어리 중 큰것부터 작은 것 순으로 검색하여. 정사각형과 유사하고, 사이즈가 적당히 큰 것으로 리턴한다. 큰 사각형 테두리를 찾더라도 더 작은 것이 우선
-                        if (/*Math.Abs(width - height) < 30 &&*/ width > 40 && height > 40)
+                        if (i == 0) //이진화
                         {
-                            // 라벨링 박스
-                            if (left < iCutSize || top < iCutSize || image.Cols < left + width + (iCutSize) || image.Rows < top + height + (iCutSize)) continue;
-
-                            Cv2.Rectangle(label_box, new Rect(left - iCutSize, top - iCutSize, width + (iCutSize * 2), height + (iCutSize * 2)), new Scalar(0, 0, 255), 3);
-
-                            Rect roi = new Rect(left - iCutSize, top - iCutSize, width + (iCutSize * 2), height + (iCutSize * 2));
-                            MatRoiImg = image_gray.SubMat(roi);
-                            Rect biroi = new Rect(left - iCutSize, top - iCutSize, width + (iCutSize * 2), height + (iCutSize * 2));
-                            tempImg = image_bi.SubMat(biroi);
-
-                            int Size = 0;
-                            FindCountour(tempImg, ref Size);
-                            if (Size < 15)//찾은 뭉티기 개수가 15개 미만(MCR Image를 제대로 커트했으면 15개 이상 나옴)
+                            if (z == 0)
                             {
-                                continue;
+                                if (ithreshold != -1)
+                                    Cv2.Threshold(image_gray, image_bi, ithreshold, 255, ThresholdTypes.Binary);
+                                else//OTSU 알고리즘
+                                    Cv2.Threshold(image_gray, image_bi, 0, 255, ThresholdTypes.Binary | ThresholdTypes.Otsu);
+                                Cv2.Dilate(image_bi, image_bi, mask, new Point(-1, -1), 1, BorderTypes.Replicate); //노이즈 제거
+                                Cv2.Erode(image_bi, image_bi, mask, new Point(-1, -1), 1, BorderTypes.Replicate); //노이즈 제거
                             }
-                            ListMatRoiImg.Add(MatRoiImg);
-                            ListFindRect.Add(new Rect(new Point(top, left), new Size(height, width)));
-                            ListReverseFlag.Add(bReverse);
-                            bFind = true;
+                            else
+                                Cv2.Dilate(image_bi, image_bi, mask, new Point(1, 1), z, BorderTypes.Replicate); //노이즈 제거      
                         }
+                        else if (i == 1) //(첫번째 이진화 실패할 경우 반전)
+                        {
+                            bReverse = true;
+                            if (z == 0)
+                            {
+                                if (ithreshold != -1)
+                                    Cv2.Threshold(image_gray, image_bi, ithreshold, 255, ThresholdTypes.BinaryInv);
+                                else//OTSU 알고리즘
+                                    Cv2.Threshold(image_gray, image_bi, 0, 255, ThresholdTypes.BinaryInv | ThresholdTypes.Otsu);
+                                Cv2.Erode(image_bi, image_bi, mask, new Point(-1, -1), 1, BorderTypes.Replicate); //노이즈 제거  
+                                Cv2.Dilate(image_bi, image_bi, mask, new Point(-1, -1), 1, BorderTypes.Replicate); //노이즈 제거       
+                            }
+                            else
+                                Cv2.Erode(image_bi, image_bi, mask, new Point(1, 1), z, BorderTypes.Replicate); //노이즈 제거      
+                        }
+                        else if (i == 2) //(첫번째 이진화 실패할 경우 반전)
+                        {
+                            bReverse = false;
+                            if (z == 0)
+                            {
+                                Cv2.Threshold(image_gray, image_bi, 150, 255, ThresholdTypes.Binary);
+                                Cv2.Dilate(image_bi, image_bi, mask, new Point(-1, -1), 1, BorderTypes.Replicate); //노이즈 제거
+                                Cv2.Erode(image_bi, image_bi, mask, new Point(-1, -1), 1, BorderTypes.Replicate); //노이즈 제거
+                            }
+                            else
+                                Cv2.Dilate(image_bi, image_bi, mask, new Point(1, 1), z, BorderTypes.Replicate); //노이즈 제거      
+                        }
+
+                        else if (i == 3) //(첫번째 이진화 실패할 경우 반전)
+                        {
+                            bReverse = true;
+                            if (z == 0)
+                            {
+                                Cv2.Threshold(image_gray, image_bi, 150, 255, ThresholdTypes.BinaryInv);
+                                Cv2.Erode(image_bi, image_bi, mask, new Point(-1, -1), 1, BorderTypes.Replicate); //노이즈 제거    
+                                Cv2.Dilate(image_bi, image_bi, mask, new Point(-1, -1), 1, BorderTypes.Replicate); //노이즈 제거       
+                            }
+                            else
+                                Cv2.Erode(image_bi, image_bi, mask, new Point(1, 1), z, BorderTypes.Replicate); //노이즈 제거      
+                        }
+                        else if (i == 4) //(첫번째 이진화 실패할 경우 반전)
+                        {
+                            bReverse = false;
+                            if (z == 0)
+                            {
+                                Cv2.GaussianBlur(image_gray, image_gray, new Size(3, 3), 0);
+                                Cv2.Canny(image_gray, image_bi, 0, 50, 3);
+                            }
+                            else
+                                Cv2.Dilate(image_bi, image_bi, mask, new Point(1, 1), z, BorderTypes.Replicate); //노이즈 제거   
+                        }
+
+                        Mat cent = new Mat();
+                        label = Cv2.ConnectedComponentsWithStats(image_bi, img_label, stats, centroids, PixelConnectivity.Connectivity8, MatType.CV_32S);
+
+                        int iCutSize = 1;
+                        //if (!AutoSizeChk) iCutSize = 0;
+
+                        int area, left, top, width, height;
+                        for (int j = 1; j < label; j++)
+                        {
+                            left = stats.At<int>(j, (int)ConnectedComponentsTypes.Left);
+                            top = stats.At<int>(j, (int)ConnectedComponentsTypes.Top);
+                            width = stats.At<int>(j, (int)ConnectedComponentsTypes.Width);
+                            height = stats.At<int>(j, (int)ConnectedComponentsTypes.Height);
+                            area = stats.At<int>(j, (int)ConnectedComponentsTypes.Area);
+
+                            // 찾은 덩어리 중 큰것부터 작은 것 순으로 검색하여. 정사각형과 유사하고, 사이즈가 적당히 큰 것으로 리턴한다. 큰 사각형 테두리를 찾더라도 더 작은 것이 우선
+                            if ((Math.Abs(width - height) < 20 || (width > height * 1.5 && width < height * 2.5) || (height > width * 1.5 && height < width * 2.5)) && width > MinSizeFilter && height > MinSizeFilter)
+                            {
+                                // 라벨링 박스
+                                if (left < iCutSize || top < iCutSize || image.Cols < left + width + (iCutSize) || image.Rows < top + height + (iCutSize)) continue;
+
+                                Cv2.Rectangle(label_box, new Rect(left - iCutSize, top - iCutSize, width + (iCutSize * 2), height + (iCutSize * 2)), new Scalar(0, 0, 255), 3);
+
+                                Rect roi = new Rect(left - iCutSize, top - iCutSize, width + (iCutSize * 2), height + (iCutSize * 2));
+                                MatRoiImg = image_gray.SubMat(roi);
+                                Rect biroi = new Rect(left - iCutSize, top - iCutSize, width + (iCutSize * 2), height + (iCutSize * 2));
+                                tempImg = image_bi.SubMat(biroi);
+
+                                int Size = 0;
+                                FindCountour(tempImg, ref Size);
+                                if (Size < 15)//찾은 뭉티기 개수가 15개 미만(MCR Image를 제대로 커트했으면 15개 이상 나옴)
+                                {
+                                    continue;
+                                }
+                                ListMatRoiImg.Add(MatRoiImg);
+                                ListFindRect.Add(new Rect(new Point(top, left), new Size(height, width)));
+                                ListReverseFlag.Add(bReverse);
+                                bFind = true;
+                            }
+                        }
+                        if (bFind && i != 0) break;
                     }
                     if (bFind && i != 0) break;
                 }
@@ -225,7 +270,6 @@ namespace DataMatrixLib
 
                 for (int k = 0; k < ListMatRoiImg.Count(); k++) //찾은 후보들을 전부 Search
                 {
-                    bFindFlag = true;
                     if (ListMatRoiImg == null)
                     {
                         bFindFlag = false;
@@ -265,294 +309,308 @@ namespace DataMatrixLib
                             }
                         }
                     }
-                    int iMeanPeak = 0, iPeakCnt = 0;
-                    mapPeakInfo = new SortedDictionary<float, int>();
-                    if (ithreshold != -1)//찾은 후보를 고정 threshold로 변환
+    
+                    for (int z = 0; z < 10; z++)
                     {
-                        Cv2.Threshold(ListMatRoiImg[k], MatRoiImgBi, ithreshold, 255, ThresholdTypes.Binary);
-                        iPeakCnt = -1;
-                    }
-                    else//찾은 후보를 히스토그램을 구해 가장 높은 Peak 와 그 다음 Peaak의 평균 값으로 threshold
-                    {
-                        FindHistMeanPeak(ListMatRoiImg[k], out iMeanPeak);
-                        Cv2.Threshold(ListMatRoiImg[k], MatRoiImgBi, iMeanPeak, 255, ThresholdTypes.Binary);
-                    }
-
-                    iboraderLength = (int)(MatRoiImgBi.Rows / 100); //가장자리에 여백 만들기(여백이 어느정도 있어야함)
-                    if (!bRetry)
-                    {
-                        if (ListReverseFlag[k])
+                        bFindFlag = true;
+                        int iMeanPeak = 0, iPeakCnt = 0;
+                        mapPeakInfo = new SortedDictionary<float, int>();
+                        if (ithreshold != -1)//찾은 후보를 고정 threshold로 변환
                         {
-                            Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, Scalar.White);
-                            Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
-                            Cv2.Erode(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
+                            Cv2.Threshold(ListMatRoiImg[k], MatRoiImgBi, ithreshold, 255, ThresholdTypes.Binary);
+                            iPeakCnt = -1;
                         }
-                        else
+                        else//찾은 후보를 히스토그램을 구해 가장 높은 Peak 와 그 다음 Peaak의 평균 값으로 threshold
                         {
-                            Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, Scalar.Black);
-                            Cv2.Erode(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
-                            Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
+                            FindHistMeanPeak(ListMatRoiImg[k], out iMeanPeak);
+                            Cv2.Threshold(ListMatRoiImg[k], MatRoiImgBi, iMeanPeak, 255, ThresholdTypes.Binary);
                         }
-                    }
-                    else
-                    {
-                        if (ListReverseFlag[k])
+                        if (z != 0) Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(1, 1), z, BorderTypes.Replicate); //마킹 확산
+                        iboraderLength = (int)(MatRoiImgBi.Rows / 100); //가장자리에 여백 만들기(여백이 어느정도 있어야함)
+                        if (!bRetry)
                         {
-                            Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, Scalar.Black);
-                            Cv2.Erode(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
-                            Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
-                        }
-                        else
-                        {
-                            Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, Scalar.White);
-                            Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
-                            Cv2.Erode(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
-                        }
-                    }
-                    int[] iindexChk = new int[2];
-                    List<int>[] ListEdgePoints = new List<int>[2];
-                    for (int i = 0; i < 2; i++) ListEdgePoints[i] = new List<int>();
-                    bool[] m_bMCROrigin = new bool[2];
-                    int m_iMCROrigin = 0;
-                    if (AutoSizeChk)
-                    {
-                        iMatrixCnt = 0;
-                        int iCntTmp = simbol;
-
-                        for (int rotate = 0; rotate < 2; rotate++) //상면, 하면 검사하여 Matrix Dot Count Check
-                        {
-                            while (OriginMake(MatRoiImgBi.Clone()) ? !FindMCRCnt(MatRoiImgBi, rotate, ref ListEdgePoints, ref iindexChk, ref iCntTmp, ref m_bMCROrigin, ref m_iMCROrigin) : true)
+                            if (ListReverseFlag[k])
                             {
-                                iPeakCnt++;
-                                if (!FindHistMeanPeak(ListMatRoiImg[k], out iMeanPeak, iPeakCnt) || iPeakCnt > 5)
+                                Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, 255);
+                                Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
+                                Cv2.Erode(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
+                            }
+                            else
+                            {
+                                Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, 0);
+                                Cv2.Erode(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
+                                Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
+                            }
+                        }
+                        else
+                        {
+                            if (ListReverseFlag[k])
+                            {
+                                Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, 0);
+                                Cv2.Erode(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
+                                Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
+                            }
+                            else
+                            {
+                                Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, 255);
+                                Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
+                                Cv2.Erode(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
+                            }
+                        }
+                        int[] iindexChk = new int[2];
+                        List<int>[] ListEdgePoints = new List<int>[2];
+                        for (int i = 0; i < 2; i++) ListEdgePoints[i] = new List<int>();
+                        bool[] m_bMCROrigin = new bool[2];
+                        int m_iMCROrigin = 0;
+                        if (AutoSizeChk)
+                        {
+                            iMatrixCnt = 0;
+                            int iCntTmp = simbol;
+                            for (int rotate = 0; rotate < 2; rotate++) //상면, 하면 검사하여 Matrix Dot Count Check
+                            {
+                                while (OriginMake(MatRoiImgBi.Clone()) ? !FindMCRCnt(MatRoiImgBi, rotate, ref ListEdgePoints, ref iindexChk, ref iCntTmp, ref m_bMCROrigin, ref m_iMCROrigin) : true)
                                 {
-                                    bFindFlag = false;
-                                    break;
+                                    iPeakCnt++;
+                                    if (!FindHistMeanPeak(ListMatRoiImg[k], out iMeanPeak, iPeakCnt) || iPeakCnt > 5)
+                                    {
+                                        bFindFlag = false;
+                                        break;
+                                    }
+
+                                    iCntTmp = simbol;
+                                    rotate = 0;
+                                    Cv2.Threshold(ListMatRoiImg[k], MatRoiImgBi, iMeanPeak, 255, ThresholdTypes.Binary);
+                                    if (!bRetry)
+                                    {
+                                        if (ListReverseFlag[k])
+                                        {
+                                            Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, 255);
+                                            Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
+                                            Cv2.Erode(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
+                                        }
+                                        else
+                                        {
+                                            Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, 0);
+                                            Cv2.Erode(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
+                                            Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (ListReverseFlag[k])
+                                        {
+                                            Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, 0);
+                                            Cv2.Erode(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
+                                            Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
+                                        }
+                                        else
+                                        {
+                                            Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, 255);
+                                            Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
+                                            Cv2.Erode(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
+                                        }
+                                    }
                                 }
 
-                                iCntTmp = simbol;
-                                rotate = 0;
-                                Cv2.Threshold(ListMatRoiImg[k], MatRoiImgBi, iMeanPeak, 255, ThresholdTypes.Binary);
+                                if (iCntTmp >= iMatrixCnt)
+                                    iMatrixCnt = iCntTmp;
+                                if (bFindFlag == false && bRetry == true) continue;
+
+                                if (iMatrixCnt < 10)
+                                {
+                                    continue;
+                                }
+                            }
+
+                            if (iMatrixCnt < 10 ||
+                                (ListEdgePoints[0] == null || ListEdgePoints[0].Count == 0) ||
+                                (ListEdgePoints[1] == null || ListEdgePoints[1].Count == 0) ||
+                                ListEdgePoints[0].Count() % 2 == 1 ||
+                                ListEdgePoints[1].Count() % 2 == 1)// ||
+                                                                   //ListEdgePoints[0].Count() != ListEdgePoints[1].Count())
+                            {
+                                bFindFlag = false;
+                            }
+
+                            if (bFindFlag == true)
+                            {
+                                /////////////////////검증용/////////////////////////
+                                MatRoiImgBi.CopyTo(MatRoiImgBiLine);
+                                MatRoiImgBi.CopyTo(MatRoiImgDot);
+                                //Cv2.CvtColor(ListMatRoiImg[k], ListMatRoiImg[k], ColorConversionCodes.GRAY2BGR);
+                                Cv2.CvtColor(MatRoiImgBiLine, MatRoiImgBiLine, ColorConversionCodes.GRAY2BGR);
+                                //라인 search
+                                for (int rotate = 0; rotate < ListEdgePoints[0].Count; rotate++) //검증용 Line 그리기
+                                {
+                                    Cv2.Line(MatRoiImgBiLine, ListEdgePoints[0][rotate], 0, ListEdgePoints[0][rotate], MatRoiImgBi.Rows, new Scalar(0, 255, 0));
+                                }
+                                for (int rotate = 0; rotate < ListEdgePoints[1].Count; rotate++)
+                                {
+                                    Cv2.Line(MatRoiImgBiLine, 0, ListEdgePoints[1][rotate], MatRoiImgBi.Cols, ListEdgePoints[1][rotate], new Scalar(0, 255, 0));
+                                }
+                                MatRoiImgBiLine.CopyTo(CrossLineImg);
+
+                                int numerator, denominator, multColum, multRow;
+                                if (ListEdgePoints[0].Count > ListEdgePoints[1].Count)
+                                {
+                                    numerator = ListEdgePoints[0].Count;
+                                    denominator = ListEdgePoints[1].Count;
+                                    multColum = (int)Math.Ceiling((double)(numerator / denominator));
+                                    multRow = 1;
+
+                                }
+                                else
+                                {
+                                    numerator = ListEdgePoints[1].Count;
+                                    denominator = ListEdgePoints[0].Count;
+                                    multColum = 1;
+                                    multRow = (int)Math.Ceiling((double)(numerator / denominator));
+                                }
+                                Cv2.Resize(CrossLineImg, CrossLineImg, new Size(300 * multColum, 300 * multRow), 0, 0, InterpolationFlags.Linear);
+                                //////////////////////////////////////////////////////
+                                //MatRoiImgBiLine                        
                                 if (!bRetry)
                                 {
                                     if (ListReverseFlag[k])
-                                    {
-                                        Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, Scalar.White);
-                                        Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
-                                        Cv2.Erode(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
-                                    }
+                                        MCRResultImg = new Mat(ListEdgePoints[1].Count + 3, ListEdgePoints[0].Count + 3, MatType.CV_8U, new Scalar(255));
                                     else
-                                    {
-                                        Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, Scalar.Black);
-                                        Cv2.Erode(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
-                                        Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
-                                    }
+                                        MCRResultImg = new Mat(ListEdgePoints[1].Count + 3, ListEdgePoints[0].Count + 3, MatType.CV_8U, new Scalar(0));
                                 }
                                 else
                                 {
-                                    if (ListReverseFlag[k])
-                                    {
-                                        Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, Scalar.Black);
-                                        Cv2.Erode(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
-                                        Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
-                                    }
+                                    if (!ListReverseFlag[k])
+                                        MCRResultImg = new Mat(ListEdgePoints[1].Count + 3, ListEdgePoints[0].Count + 3, MatType.CV_8U, new Scalar(255));
                                     else
-                                    {
-                                        Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, Scalar.White);
-                                        Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
-                                        Cv2.Erode(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
-                                    }
+                                        MCRResultImg = new Mat(ListEdgePoints[1].Count + 3, ListEdgePoints[0].Count + 3, MatType.CV_8U, new Scalar(0));
                                 }
-                            }
-
-                            if (iCntTmp >= iMatrixCnt)
-                                iMatrixCnt = iCntTmp;
-                            if (bFindFlag == false && bRetry == true) continue;
-
-                            if (iMatrixCnt < 10)
-                            {
-                                continue;
-                            }
-                        }
-
-                        if (iMatrixCnt < 10 ||
-                            (ListEdgePoints[0] == null || ListEdgePoints[0].Count == 0) ||
-                            (ListEdgePoints[1] == null || ListEdgePoints[1].Count == 0) ||
-                            ListEdgePoints[0].Count() % 2 == 1 ||
-                            ListEdgePoints[1].Count() % 2 == 1)// ||
-                                                               //ListEdgePoints[0].Count() != ListEdgePoints[1].Count())
-                        {
-                            bFindFlag = false;
-                        }
-
-                        if (bFindFlag == true)
-                        {
-                            /////////////////////검증용/////////////////////////
-                            MatRoiImgBi.CopyTo(MatRoiImgBiLine);
-                            MatRoiImgBi.CopyTo(MatRoiImgDot);
-                            Cv2.CvtColor(ListMatRoiImg[k], ListMatRoiImg[k], ColorConversionCodes.GRAY2BGR);
-                            Cv2.CvtColor(MatRoiImgBiLine, MatRoiImgBiLine, ColorConversionCodes.GRAY2BGR);
-                            //라인 search
-                            for (int rotate = 0; rotate < ListEdgePoints[0].Count; rotate++) //검증용 Line 그리기
-                            {
-                                Cv2.Line(MatRoiImgBiLine, ListEdgePoints[0][rotate], 0, ListEdgePoints[0][rotate], MatRoiImgBi.Rows, new Scalar(0, 255, 0));
-                            }
-                            for (int rotate = 0; rotate < ListEdgePoints[1].Count; rotate++)
-                            {
-                                Cv2.Line(MatRoiImgBiLine, 0, ListEdgePoints[1][rotate], MatRoiImgBi.Cols, ListEdgePoints[1][rotate], new Scalar(0, 255, 0));
-                            }
-                            MatRoiImgBiLine.CopyTo(CrossLineImg);
-
-                            int numerator, denominator, multColum, multRow;
-                            if (ListEdgePoints[0].Count > ListEdgePoints[1].Count)
-                            {
-                                numerator = ListEdgePoints[0].Count;
-                                denominator = ListEdgePoints[1].Count;
-                                multColum = (int)Math.Ceiling((double)(numerator / denominator));
-                                multRow = 1;
-
-                            }
-                            else
-                            {
-                                numerator = ListEdgePoints[1].Count;
-                                denominator = ListEdgePoints[0].Count;
-                                multColum = 1;
-                                multRow = (int)Math.Ceiling((double)(numerator / denominator));
-                            }
-                            Cv2.Resize(CrossLineImg, CrossLineImg, new Size(300 * multColum, 300 * multRow), 0, 0, InterpolationFlags.Linear);
-                            Cv2.ImWrite("D:\\cross.png", CrossLineImg);
-                            //////////////////////////////////////////////////////
-                            //MatRoiImgBiLine                        
-                            if (!bRetry)
-                            {
-                                if (ListReverseFlag[k])
-                                    MCRResultImg = new Mat(ListEdgePoints[1].Count + 3, ListEdgePoints[0].Count + 3, MatType.CV_8U, new Scalar(255));
-                                else
-                                    MCRResultImg = new Mat(ListEdgePoints[1].Count + 3, ListEdgePoints[0].Count + 3, MatType.CV_8U, new Scalar(0));
-                            }
-                            else
-                            {
-                                if (!ListReverseFlag[k])
-                                    MCRResultImg = new Mat(ListEdgePoints[1].Count + 3, ListEdgePoints[0].Count + 3, MatType.CV_8U, new Scalar(255));
-                                else
-                                    MCRResultImg = new Mat(ListEdgePoints[1].Count + 3, ListEdgePoints[0].Count + 3, MatType.CV_8U, new Scalar(0));
-                            }
-                            unsafe
-                            {
-                                int ix, iy;
-                                //바이너리  IMAGE 생성 
-                                Mat MCRResult = MCRResultImg.SubMat(new Rect(1, 1, ListEdgePoints[0].Count + 1, ListEdgePoints[1].Count + 1));
-
-                                for (int rotate = 0; rotate <= ListEdgePoints[1].Count; rotate++)
+                                unsafe
                                 {
-                                    if (rotate == 0)
-                                    {
-                                        if (m_iMCROrigin == 1 || m_iMCROrigin == 2)
-                                            continue;
+                                    int ix, iy;
+                                    //바이너리  IMAGE 생성 
+                                    Mat MCRResult = MCRResultImg.SubMat(new Rect(1, 1, ListEdgePoints[0].Count + 1, ListEdgePoints[1].Count + 1));
 
-                                        ix = (int)((ListEdgePoints[1][rotate] / 2) + 0.5);
-                                    }
-                                    else if (rotate == ListEdgePoints[1].Count)
+                                    for (int rotate = 0; rotate <= ListEdgePoints[1].Count; rotate++)
                                     {
-                                        if (m_iMCROrigin == 3 || m_iMCROrigin == 4)
-                                            continue;
-
-                                        ix = (int)((MatRoiImgBi.Rows + ListEdgePoints[1][rotate - 1]) / 2 - 0.5);
-                                    }
-                                    else
-                                    {
-                                        if (m_iMCROrigin == 1 || m_iMCROrigin == 2)
-                                            ix = (int)((ListEdgePoints[1][rotate - 1] + ListEdgePoints[1][rotate]) / 2 - 0.5);
-                                        else
-                                            ix = (int)((ListEdgePoints[1][rotate - 1] + ListEdgePoints[1][rotate]) / 2 + 0.5);
-                                    }
-
-                                    byte* dotPixel = (byte*)MatRoiImgDot.Ptr(ix);
-                                    byte* mcrPtr = (byte*)MCRResult.Ptr(rotate);
-
-                                    for (int j = 0; j <= ListEdgePoints[0].Count; j++)
-                                    {
-                                        if (j == 0)
+                                        if (rotate == 0)
                                         {
-                                            if (m_iMCROrigin == 1 || m_iMCROrigin == 3)
+                                            if (m_iMCROrigin == 1 || m_iMCROrigin == 2)
                                                 continue;
 
-                                            iy = (int)((ListEdgePoints[0][j] / 2) + 0.5);
+                                            ix = (int)((ListEdgePoints[1][rotate] / 2) + 0.5);
                                         }
-                                        else if (j == ListEdgePoints[0].Count)
+                                        else if (rotate == ListEdgePoints[1].Count)
                                         {
-                                            if (m_iMCROrigin == 2 || m_iMCROrigin == 4)
+                                            if (m_iMCROrigin == 3 || m_iMCROrigin == 4)
                                                 continue;
 
-                                            iy = (int)((MatRoiImgBi.Cols + ListEdgePoints[0][j - 1]) / 2 + 0.5);
+                                            ix = (int)((MatRoiImgBi.Rows + ListEdgePoints[1][rotate - 1]) / 2 - 0.5);
                                         }
                                         else
                                         {
-                                            iy = (int)((ListEdgePoints[0][j - 1] + ListEdgePoints[0][j]) / 2 + 0.5);
+                                            if (m_iMCROrigin == 1 || m_iMCROrigin == 2)
+                                                ix = (int)((ListEdgePoints[1][rotate - 1] + ListEdgePoints[1][rotate]) / 2 - 0.5);
+                                            else
+                                                ix = (int)((ListEdgePoints[1][rotate - 1] + ListEdgePoints[1][rotate]) / 2 + 0.5);
                                         }
 
-                                        mcrPtr[j] = dotPixel[iy];
-                                        dotPixel[iy] = 127;
+                                        byte* dotPixel = (byte*)MatRoiImgDot.Ptr(ix);
+                                        byte* mcrPtr = (byte*)MCRResult.Ptr(rotate);
+
+                                        for (int j = 0; j <= ListEdgePoints[0].Count; j++)
+                                        {
+                                            if (j == 0)
+                                            {
+                                                if (m_iMCROrigin == 1 || m_iMCROrigin == 3)
+                                                    continue;
+
+                                                iy = (int)((ListEdgePoints[0][j] / 2) + 0.5);
+                                            }
+                                            else if (j == ListEdgePoints[0].Count)
+                                            {
+                                                if (m_iMCROrigin == 2 || m_iMCROrigin == 4)
+                                                    continue;
+
+                                                iy = (int)((MatRoiImgBi.Cols + ListEdgePoints[0][j - 1]) / 2 + 0.5);
+                                            }
+                                            else
+                                            {
+                                                iy = (int)((ListEdgePoints[0][j - 1] + ListEdgePoints[0][j]) / 2 + 0.5);
+                                            }
+
+                                            mcrPtr[j] = dotPixel[iy];
+                                            dotPixel[iy] = 127;
+                                        }
+                                    }
+                                    //가장자리 영역 재구성 (X x X)
+                                    //상                            
+                                    for (int rotate = 1; rotate < MCRResult.Cols; rotate++)
+                                    {
+                                        if (m_iMCROrigin == 1 || m_iMCROrigin == 2) break;
+                                        byte value = MCRResult.At<byte>(0, rotate - 1);
+                                        value = (value == 255) ? (byte)0 : (byte)255;
+                                        MCRResult.Set(0, rotate, value);
+                                    }
+                                    //하
+                                    for (int rotate = 1; rotate < MCRResult.Cols; rotate++)
+                                    {
+                                        if (m_iMCROrigin == 3 || m_iMCROrigin == 4) break;
+                                        byte value = MCRResult.At<byte>(MCRResult.Rows - 1, rotate - 1);
+                                        MCRResult.Set(MCRResult.Rows - 1, rotate, (value == 255) ? (byte)0 : (byte)255);
+                                    }
+                                    //좌
+                                    for (int rotate = 1; rotate < MCRResult.Rows; rotate++)
+                                    {
+                                        if (m_iMCROrigin == 1 || m_iMCROrigin == 3) break;
+                                        byte value = MCRResult.At<byte>(rotate - 1, 0);
+                                        MCRResult.Set(rotate, 0, (value == 255) ? (byte)0 : (byte)255);
+                                    }
+                                    //우
+                                    for (int rotate = 1; rotate < MCRResult.Rows; rotate++)
+                                    {
+                                        if (m_iMCROrigin == 2 || m_iMCROrigin == 4) break;
+                                        byte value = MCRResult.At<byte>(rotate - 1, MCRResult.Cols - 1);
+                                        MCRResult.Set(rotate, MCRResult.Cols - 1, (value == 255) ? (byte)0 : (byte)255);
+                                    }
+
+                                    switch (m_iMCROrigin)
+                                    {
+                                        case 1:
+                                            MCRResultImg = new Mat(MCRResultImg, new Rect(1, 1, MCRResultImg.Cols - 1, MCRResultImg.Rows - 1));
+                                            break;
+                                        case 2:
+                                            MCRResultImg = new Mat(MCRResultImg, new Rect(0, 1, MCRResultImg.Cols - 1, MCRResultImg.Rows - 1));
+                                            break;
+                                        case 3:
+                                            MCRResultImg = new Mat(MCRResultImg, new Rect(1, 0, MCRResultImg.Cols - 1, MCRResultImg.Rows - 1));
+                                            break;
+                                        case 4:
+                                            MCRResultImg = new Mat(MCRResultImg, new Rect(0, 0, MCRResultImg.Cols - 1, MCRResultImg.Rows - 1));
+                                            break;
+                                        default:
+                                            MCRResultImg = new Mat(MCRResultImg, new Rect(1, 0, MCRResultImg.Cols - 1, MCRResultImg.Rows - 1));
+                                            break;
                                     }
                                 }
-                                //가장자리 영역 재구성 (X x X)
-                                //상                            
-                                for (int rotate = 1; rotate < MCRResult.Cols; rotate++)
-                                {
-                                    if (m_iMCROrigin == 1 || m_iMCROrigin == 2) break;
-                                    byte value = MCRResult.At<byte>(0, rotate - 1);
-                                    value = (value == 255) ? (byte)0 : (byte)255;
-                                    MCRResult.Set(0, rotate, value);
-                                }
-                                //하
-                                for (int rotate = 1; rotate < MCRResult.Cols; rotate++)
-                                {
-                                    if (m_iMCROrigin == 3 || m_iMCROrigin == 4) break;
-                                    byte value = MCRResult.At<byte>(MCRResult.Rows - 1, rotate - 1);
-                                    MCRResult.Set(MCRResult.Rows - 1, rotate, (value == 255) ? (byte)0 : (byte)255);
-                                }
-                                //좌
-                                for (int rotate = 1; rotate < MCRResult.Rows; rotate++)
-                                {
-                                    if (m_iMCROrigin == 1 || m_iMCROrigin == 3) break;
-                                    byte value = MCRResult.At<byte>(rotate - 1, 0);
-                                    MCRResult.Set(rotate, 0, (value == 255) ? (byte)0 : (byte)255);
-                                }
-                                //우
-                                for (int rotate = 1; rotate < MCRResult.Rows; rotate++)
-                                {
-                                    if (m_iMCROrigin == 2 || m_iMCROrigin == 4) break;
-                                    byte value = MCRResult.At<byte>(rotate - 1, MCRResult.Cols - 1);
-                                    MCRResult.Set(rotate, MCRResult.Cols - 1, (value == 255) ? (byte)0 : (byte)255);
-                                }
-
-                                switch (m_iMCROrigin)
-                                {
-                                    case 1:
-                                        MCRResultImg = new Mat(MCRResultImg, new Rect(1, 1, MCRResultImg.Cols - 1, MCRResultImg.Rows - 1));
-                                        break;
-                                    case 2:
-                                        MCRResultImg = new Mat(MCRResultImg, new Rect(0, 1, MCRResultImg.Cols - 1, MCRResultImg.Rows - 1));
-                                        break;
-                                    case 3:
-                                        MCRResultImg = new Mat(MCRResultImg, new Rect(1, 0, MCRResultImg.Cols - 1, MCRResultImg.Rows - 1));
-                                        break;
-                                    case 4:
-                                        MCRResultImg = new Mat(MCRResultImg, new Rect(0, 0, MCRResultImg.Cols - 1, MCRResultImg.Rows - 1));
-                                        break;
-                                    default:
-                                        MCRResultImg = new Mat(MCRResultImg, new Rect(1, 0, MCRResultImg.Cols - 1, MCRResultImg.Rows - 1));
-                                        break;
-                                }
+                                Cv2.Resize(MCRResultImg, MCRResultImg, new Size(MCRResultImg.Cols * 10, MCRResultImg.Rows * 10), 0, 0, InterpolationFlags.Nearest);
+                                MCRResultImg.CopyTo(DstImg);
                             }
-                            Cv2.Resize(MCRResultImg, MCRResultImg, new Size(MCRResultImg.Cols * 10, MCRResultImg.Rows * 10), 0, 0, InterpolationFlags.Nearest);
-                            MCRResultImg.CopyTo(DstImg);
+                        }
+                        if (bFindFlag)
+                        {
+                            var result = RecognitionMatrix(DstImg);
+                            if (result == "")
+                            {
+                                bFindFlag = false; break;
+                            }
+                            return result;
                         }
                     }
+
                     if (bFindFlag)
                     {
-                        return true;
+                        return "";
                     }
+
                     else
                     {
                         if (k == ListMatRoiImg.Count - 1 && bRetry == false)
@@ -566,9 +624,10 @@ namespace DataMatrixLib
             }
             catch (Exception e)
             {
-                return false;
+                Console.WriteLine(e.Message);
+                return "";
             }
-            return false;
+            return "";
         }
         static void FindCountour(Mat img, ref int iSize)
         {
@@ -774,7 +833,7 @@ namespace DataMatrixLib
 
             return true;
         }
-        static bool OriginMake(Mat Byimg)
+        public static bool OriginMake(Mat Byimg)
         {
             Mat matroiimg_gray_roi;
             int iRisingCnt = 0;
@@ -834,7 +893,6 @@ namespace DataMatrixLib
                         new Point(BorderLength, i),
                         new Point(Byimg.Cols - 1 - BorderLength, i),
                         new Scalar(PixelData), 1);
-                    //Cv2.ImWrite("D:\\originmake1.png", Byimg);
                     width = true;
                 }
             }
@@ -886,7 +944,6 @@ namespace DataMatrixLib
                         new Point(BorderLength, i),
                         new Point(Byimg.Cols - 1 - BorderLength, i),
                         new Scalar(PixelData), 1);
-                    //Cv2.ImWrite("D:\\originmake2.png", Byimg);
                     width = true;
                 }
             }
@@ -938,7 +995,6 @@ namespace DataMatrixLib
                         new Point(i, BorderLength),
                         new Point(i, Byimg.Rows - 1 - BorderLength),
                         new Scalar(PixelData), 1);
-                    //Cv2.ImWrite("D:\\originmake3.png", Byimg);
                     height = true;
                 }
             }
@@ -990,294 +1046,291 @@ namespace DataMatrixLib
                         new Point(i, BorderLength),
                         new Point(i, Byimg.Rows - 1 - BorderLength),
                         new Scalar(PixelData), 1);
-                    //Cv2.ImWrite("D:\\originmake4.png", Byimg);
                     height = true;
                 }
             }
 
             return height && width;
         }
-        unsafe static bool FindMCRCnt(Mat img, int iType, ref List<int>[] vecEdgePoints, ref int[] iIndex, ref int MatrixCnt, ref bool[] m_bMCROrigin, ref int m_iMCROrigin)
+        unsafe public static bool FindMCRCnt(Mat img, int iType, ref List<int>[] vecEdgePoints, ref int[] iIndex, ref int MatrixCnt, ref bool[] m_bMCROrigin, ref int m_iMCROrigin)
         {
-            if (img.Empty()) return false;
-
-            Mat matTmp = new Mat();
-
-            img.CopyTo(matTmp);
-            if (matTmp.Channels() != 1)
-                Cv2.CvtColor(matTmp, matTmp, ColorConversionCodes.BGR2GRAY);
-
-            if (iType == 1)
+            try
             {
-                matTmp = matTmp.T();
-                Cv2.Flip(matTmp, matTmp, FlipMode.Y);
-            }
-            else if (iType != 0)
-            {
-                return false;
-            }
-            Size DotSize = FindDotSize(img.Clone());
-            int Count = (int)(matTmp.Rows / DotSize.Width);
-            int iRowSize = (int)(matTmp.Rows / Count);
-            MultiMap<int, int>[] mapEdgeSearch = new MultiMap<int, int>[2];
-            MultiMap<int, int>[] mapRisingPos = new MultiMap<int, int>[2];
-            MultiMap<int, int>[] mapFallingPos = new MultiMap<int, int>[2];
-            HashSet<int>[] mapEdgeSearchKey = new HashSet<int>[2];
-
-            for (int i = 0; i < 2; i++)
-            {
-                mapEdgeSearch[i] = new MultiMap<int, int>();
-                mapRisingPos[i] = new MultiMap<int, int>();
-                mapFallingPos[i] = new MultiMap<int, int>();
-                mapEdgeSearchKey[i] = new HashSet<int>();
-            }
-
-            int[] MaxKey = new int[2];
-            int[] repeatTar = new int[2];
-            int mcr_version = 0;
-
-            for (int updown = 0; updown < 2; updown++)
-            {
-                if (updown == 1)
-                    Cv2.Flip(matTmp, matTmp, FlipMode.XY);
-                int MaxKeyCnt = 0;
-                int iFindCutPos = -1;
-
-                for (int i = 0; i < iRowSize; i++)
+                if (img.Empty()) return false;
+                int Shape = 0;
+                if (img.Cols * 1.5 < img.Rows)
+                { Shape = 1; }
+                else if (img.Rows * 1.5 < img.Cols)
                 {
-                    int iRisingCnt = 0;
-                    int iFallingCnt = 0;
+                    Shape = 2;
+                }
+                else
+                {
+                    Shape = 0;
+                }
 
-                    byte* ptr = (byte*)matTmp.Ptr(i).ToPointer();
-                    byte prev = ptr[0];
+                Mat matTmp = new Mat();
 
-                    for (int j = 1; j < matTmp.Cols; j++)
+                img.CopyTo(matTmp);
+                if (matTmp.Channels() != 1)
+                    Cv2.CvtColor(matTmp, matTmp, ColorConversionCodes.BGR2GRAY);
+                if (iType == 1)
+                {
+                    matTmp = matTmp.T();
+                    Cv2.Flip(matTmp, matTmp, FlipMode.Y);
+                }
+                else if (iType != 0)
+                {
+                    return false;
+                }
+                int iRowSize = (int)(matTmp.Rows / 12.0 + 0.5);// (int)(matTmp.Rows / Count);  
+                MultiMap<int, int>[] mapEdgeSearch = new MultiMap<int, int>[2];
+                MultiMap<int, int>[] mapRisingPos = new MultiMap<int, int>[2];
+                MultiMap<int, int>[] mapFallingPos = new MultiMap<int, int>[2];
+                HashSet<int>[] mapEdgeSearchKey = new HashSet<int>[2];
+
+                for (int i = 0; i < 2; i++)
+                {
+                    mapEdgeSearch[i] = new MultiMap<int, int>();
+                    mapRisingPos[i] = new MultiMap<int, int>();
+                    mapFallingPos[i] = new MultiMap<int, int>();
+                    mapEdgeSearchKey[i] = new HashSet<int>();
+                }
+
+                int[] MaxKey = new int[2];
+                int[] repeatTar = new int[2];
+                int mcr_version = 0;
+
+                for (int updown = 0; updown < 2; updown++)
+                {
+                    if (updown == 1)
+                        Cv2.Flip(matTmp, matTmp, FlipMode.XY);
+                    int MaxKeyCnt = 0;
+                    int iFindCutPos = -1;
+
+                    for (int i = 0; i < iRowSize; i++)
                     {
-                        byte cur = ptr[j];
+                        int iRisingCnt = 0;
+                        int iFallingCnt = 0;
 
-                        if (cur != prev)
+                        byte* ptr = (byte*)matTmp.Ptr(i).ToPointer();
+                        byte prev = ptr[0];
+
+                        for (int j = 1; j < matTmp.Cols; j++)
                         {
-                            if (cur > prev)
+                            byte cur = ptr[j];
+
+                            if (cur != prev)
                             {
-                                iRisingCnt++;
-                                mapRisingPos[updown].Add(i, j);
+                                if (cur > prev)
+                                {
+                                    iRisingCnt++;
+                                    mapRisingPos[updown].Add(i, j);
+                                }
+                                else
+                                {
+                                    iFallingCnt++;
+                                    mapFallingPos[updown].Add(i, j);
+                                }
                             }
-                            else
-                            {
-                                iFallingCnt++;
-                                mapFallingPos[updown].Add(i, j);
-                            }
+                            prev = cur;
                         }
-                        prev = cur;
+
+                        if (iRisingCnt != 0 && (iRisingCnt == 1 || iRisingCnt >= 5))
+                        {
+                            mapEdgeSearchKey[updown].Add(iRisingCnt);
+                            mapEdgeSearch[updown].Add(iRisingCnt, i);
+                        }
                     }
 
-                    if (iRisingCnt != 0 && (iRisingCnt == 1 || iRisingCnt >= 5))
+                    foreach (var key in mapEdgeSearchKey[updown])
                     {
-                        mapEdgeSearchKey[updown].Add(iRisingCnt);
-                        mapEdgeSearch[updown].Add(iRisingCnt, i);
+                        int cnt = mapEdgeSearch[updown].Count(key);
+                        if (cnt > MaxKeyCnt)
+                        {
+                            MaxKeyCnt = cnt;
+                            MaxKey[updown] = key;
+                        }
                     }
-                }
 
-                foreach (var key in mapEdgeSearchKey[updown])
-                {
-                    int cnt = mapEdgeSearch[updown].Count(key);
-                    if (cnt > MaxKeyCnt)
+                    repeatTar[updown] =
+                        (int)(MaxKeyCnt * MaxKeyCnt / (double)iRowSize + 0.5);
+
+                    if (repeatTar[updown] < 1)
+                        repeatTar[updown] = 1;
+
+                    int sqrt = (int)Math.Sqrt(iRowSize);
+                    if (repeatTar[updown] > sqrt)
+                        repeatTar[updown] = sqrt;
+
+                    var list = mapEdgeSearch[updown].GetValues(MaxKey[updown]);
+                    if (list == null) return false;
+
+                    int prevVal = -9999;
+                    int repeatcnt = 0;
+
+                    foreach (var v in list)
                     {
-                        MaxKeyCnt = cnt;
-                        MaxKey[updown] = key;
-                    }
-                }
+                        if (Math.Abs(v - prevVal) == 1)
+                            repeatcnt++;
+                        else
+                            repeatcnt = 0;
 
-                repeatTar[updown] =
-                    (int)(MaxKeyCnt * MaxKeyCnt / (double)iRowSize + 0.5);
+                        if (repeatcnt >= repeatTar[updown])
+                        {
+                            iFindCutPos = v - repeatcnt;
+                            break;
+                        }
 
-                if (repeatTar[updown] < 1)
-                    repeatTar[updown] = 1;
-
-                int sqrt = (int)Math.Sqrt(iRowSize);
-                if (repeatTar[updown] > sqrt)
-                    repeatTar[updown] = sqrt;
-
-                var list = mapEdgeSearch[updown].GetValues(MaxKey[updown]);
-                if (list == null) return false;
-
-                int prevVal = -9999;
-                int repeatcnt = 0;
-
-                foreach (var v in list)
-                {
-                    if (Math.Abs(v - prevVal) == 1)
-                        repeatcnt++;
-                    else
-                        repeatcnt = 0;
-
-                    if (repeatcnt >= repeatTar[updown])
-                    {
-                        iFindCutPos = v - repeatcnt;
-                        break;
+                        prevVal = v;
                     }
 
-                    prevVal = v;
-                }
+                    if (iFindCutPos == -1)
+                        return false;
 
-                if (iFindCutPos == -1)
+                    iIndex[updown] = iFindCutPos;
+
+                    if (mcr_version < MaxKey[updown])
+                        mcr_version = MaxKey[updown];
+                }
+                if (MatrixCnt == 0)
+                    MatrixCnt = mcr_version * 2;
+                if (MatrixCnt != 0 && Shape == 1)
+                    MatrixCnt = mcr_version * 2;
+                if (MatrixCnt == 0)
                     return false;
 
-                iIndex[updown] = iFindCutPos;
+                vecEdgePoints[iType].Clear();
 
-                if (mcr_version < MaxKey[updown])
-                    mcr_version = MaxKey[updown];
-            }
+                bool bDotPos = MaxKey[0] < MaxKey[1];
+                int idx = bDotPos ? 1 : 0;
 
-            MatrixCnt = mcr_version * 2;
-            //if (img.Cols > matTmp.Cols)
-            //    MatrixCnt = mcr_version * 2;
-            if (MatrixCnt == 0)
-                return false;
+                int repeat = repeatTar[idx];
 
-            vecEdgePoints[iType].Clear();
+                int[][] pts = new int[repeat][];
+                int[] cnts = new int[repeat];
 
-            bool bDotPos = MaxKey[0] < MaxKey[1];
-            int idx = bDotPos ? 1 : 0;
-
-            int repeat = repeatTar[idx];
-
-            int[][] pts = new int[repeat][];
-            int[] cnts = new int[repeat];
-
-            for (int i = 0; i < repeat; i++)
-                pts[i] = new int[MatrixCnt + 4];
-
-            for (int i = 0; i < repeat; i++)
-            {
-                int cnt = 0;
-                int row = iIndex[idx] + i;
-
-                var rising = mapRisingPos[idx].GetValues(row);
-                if (rising != null)
-                {
-                    foreach (var v in rising)
-                    {
-                        if (cnt > mcr_version + 2) break;
-                        pts[i][cnt++] = v;
-                    }
-                }
-
-                var falling = mapFallingPos[idx].GetValues(row);
-                if (falling != null)
-                {
-                    foreach (var v in falling)
-                    {
-                        if (cnt > MatrixCnt + 4) break;
-                        pts[i][cnt++] = v;
-                    }
-                }
-
-                Array.Sort(pts[i], 0, cnt);
-                cnts[i] = cnt;
-            }
-
-            for (int j = 0; j < MatrixCnt + 4; j++)
-            {
-                long sum = 0;
-                int cnt = 0;
+                for (int i = 0; i < repeat; i++)
+                    pts[i] = new int[MatrixCnt + 4];
 
                 for (int i = 0; i < repeat; i++)
                 {
-                    if (cnts[i] <= j) break;
-                    sum += pts[i][j];
-                    cnt++;
+                    int cnt = 0;
+                    int row = iIndex[idx] + i;
+
+                    var rising = mapRisingPos[idx].GetValues(row);
+                    if (rising != null)
+                    {
+                        foreach (var v in rising)
+                        {
+                            if (cnt > mcr_version + 2) break;
+                            pts[i][cnt++] = v;
+                        }
+                    }
+
+                    var falling = mapFallingPos[idx].GetValues(row);
+                    if (falling != null)
+                    {
+                        foreach (var v in falling)
+                        {
+                            if (cnt > (MatrixCnt - 1) + 4) break;
+                            pts[i][cnt++] = v;
+                        }
+                    }
+
+                    Array.Sort(pts[i], 0, cnt);
+                    cnts[i] = cnt;
                 }
 
-                if (cnt == 0) continue;
+                for (int j = 0; j < MatrixCnt + 4; j++)
+                {
+                    long sum = 0;
+                    int cnt = 0;
 
-                int avg = (int)(sum / (double)cnt + 0.5);
-                if (avg == 0) continue;
+                    for (int i = 0; i < repeat; i++)
+                    {
+                        if (cnts[i] <= j) break;
+                        sum += pts[i][j];
+                        cnt++;
+                    }
+
+                    if (cnt == 0) continue;
+
+                    int avg = (int)(sum / (double)cnt + 0.5);
+                    if (avg == 0) continue;
+
+                    if (iType == 1)
+                        vecEdgePoints[iType].Add(bDotPos ? avg : matTmp.Cols - avg);
+                    else
+                        vecEdgePoints[iType].Add(bDotPos ? matTmp.Cols - avg : avg);
+                }
+
+                vecEdgePoints[iType].Sort();
+
+                m_bMCROrigin[iType] = (MaxKey[0] != 1);
 
                 if (iType == 1)
-                    vecEdgePoints[iType].Add(bDotPos ? avg : matTmp.Cols - avg);
-                else
-                    vecEdgePoints[iType].Add(bDotPos ? matTmp.Cols - avg : avg);
-            }
-
-            vecEdgePoints[iType].Sort();
-
-            m_bMCROrigin[iType] = (MaxKey[0] != 1);
-
-            if (iType == 1)
-            {
-                if (m_bMCROrigin[0])
-                    m_iMCROrigin = m_bMCROrigin[1] ? 4 : 3;
-                else
-                    m_iMCROrigin = m_bMCROrigin[1] ? 2 : 1;
-            }
-
-            return true;
-        }
-        static Size FindDotSize(Mat MatImage)
-        {
-            int label;
-            int cnt = 0;
-            bool bFind;
-            bool bReverse = false;
-            Mat image = MatImage.Clone();
-            Mat image_gray = MatImage.Clone();
-            Mat image_bi = new Mat();
-            Mat MatRoiImg = new Mat();
-            MatImage.CopyTo(image);
-            MatImage.CopyTo(image_gray);
-            bool AutoSizeChk = true;
-            // 라벨 레이어 변수
-            Mat img_label = new Mat();
-            Mat stats = new Mat();
-            Mat centroids = new Mat();
-            Mat label_box = new Mat();
-            Mat tempImg = new Mat();
-            Size DotSize = new Size(0, 0);
-
-            Mat tempmask = Cv2.GetStructuringElement(MorphShapes.Rect, new Size(3, 3), new Point(1, 1));
-
-            //OTSU 알고리즘                   
-            Cv2.Threshold(image_gray, image_bi, 0, 255, ThresholdTypes.Binary | ThresholdTypes.Otsu);
-            Cv2.Dilate(image_bi, image_bi, tempmask, new Point(-1, -1), 1, BorderTypes.Replicate); //노이즈 제거
-            Cv2.Erode(image_bi, image_bi, tempmask, new Point(-1, -1), 1, BorderTypes.Replicate);
-            Mat cent = new Mat();
-            label = Cv2.ConnectedComponentsWithStats(image_bi, img_label, stats, centroids);
-
-            int iCutSize = 1;
-
-            if (!AutoSizeChk) iCutSize = 0;
-
-            int area, left, top, width, height;
-
-            for (int j = 1; j < label; j++)
-            {
-                left = stats.At<int>(j, (int)ConnectedComponentsTypes.Left);
-                top = stats.At<int>(j, (int)ConnectedComponentsTypes.Top);
-                width = stats.At<int>(j, (int)ConnectedComponentsTypes.Width);
-                height = stats.At<int>(j, (int)ConnectedComponentsTypes.Height);
-                area = stats.At<int>(j, (int)ConnectedComponentsTypes.Area);
-
-                // 찾은 덩어리 중 큰것부터 작은 것 순으로 검색하여. 정사각형과 유사하고, 사이즈가 적당히 큰 것으로 리턴한다. 큰 사각형 테두리를 찾더라도 더 작은 것이 우선
-                if (Math.Abs(width - height) < 10 && width > 2 && height > 2 && width < 25 && height < 25)//  && width < 500 && height < 500)
                 {
-                    // 라벨링 박스
-                    if (left < iCutSize || top < iCutSize || image.Cols < left + width + (iCutSize) || image.Rows < top + height + (iCutSize)) continue;
-
-                    Cv2.Rectangle(label_box, new Rect(left - iCutSize, top - iCutSize, width + (iCutSize * 2), height + (iCutSize * 2)), new Scalar(0, 0, 255), 3);
-
-                    Rect roi = new Rect(left - iCutSize, top - iCutSize, width + (iCutSize * 2), height + (iCutSize * 2));
-                    MatRoiImg = image_gray.SubMat(roi);
-                    Rect biroi = new Rect(left - iCutSize, top - iCutSize, width + (iCutSize * 2), height + (iCutSize * 2));
-                    tempImg = image_bi.SubMat(biroi);
-
-                    int Size = 0;
-                    FindCountour(tempImg, ref Size);
-                    DotSize = roi.Size;
-                    return DotSize;
+                    if (m_bMCROrigin[0])
+                        m_iMCROrigin = m_bMCROrigin[1] ? 4 : 3;
+                    else
+                        m_iMCROrigin = m_bMCROrigin[1] ? 2 : 1;
                 }
+
+                return true;
             }
-            return DotSize;
+            catch
+            { return false; }
+        }
+    
+        public static string RecognitionMatrix(Mat roiMat)
+        {
+            try
+            {
+                List<string> lstResult = new List<string>();
+                string findResult = "";
+
+                //Cv2.ImShow("d", roiMat);
+                //Cv2.WaitKey(0);
+
+                var result = zxing_reader.Decode(roiMat.ToBitmap());
+                if (result != null) lstResult.Add(result.Text);
+
+                //flip
+                Mat flipMat = new Mat();
+                if (lstResult.Count == 0)
+                {
+                    for (int i = -1; i < 2; i++)
+                    {
+                        Cv2.Flip(roiMat, flipMat, (FlipMode)i);
+                        ZXing.IBarcodeReader zxing_reader = new BarcodeReader();
+                        result = zxing_reader.Decode(flipMat.ToBitmap());
+                        if (result != null)
+                        {
+                            lstResult.Add(result.Text);
+                            break;
+                        }
+                    }
+                }
+
+                var group = lstResult.GroupBy(i => i);
+                int maxCount = 0;
+                foreach (var g in group)
+                {
+                    if (maxCount <= g.Count())
+                    {
+                        maxCount = g.Count();
+                        findResult = g.Key;
+                    }
+                }
+
+                return findResult;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+                return null;
+            }
         }
     }
 }
