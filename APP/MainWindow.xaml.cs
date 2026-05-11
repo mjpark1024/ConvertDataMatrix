@@ -52,22 +52,6 @@ namespace APP
                 ConvertImage.Source = null;
             }
         }
-
-        //private void btnTest_Click(object sender, RoutedEventArgs e)
-        //{
-        //    string tessPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tessdata");
-        //    using (var engine = new TesseractEngine(tessPath, "kor+eng", EngineMode.Default))
-        //    {
-        //        using (var img = PixConverter.ToPix(Binarybmp))
-        //        {
-        //            using (var page = engine.Process(img))
-        //            {
-        //                string text = page.GetText();
-        //                Result.Text = text;
-        //            }
-        //        }
-        //    }
-        //}
         private void btnConvert_Click(object sender, RoutedEventArgs e)
         {
             Mat srcImage = BitmapConverter.ToMat(m_BitLoadbmpimage);
@@ -160,12 +144,12 @@ namespace APP
                             }
 
                             // UI 갱신 기회를 주고, 500ms 대기 (UI 스레드 블로킹 없음)
-                            await Task.Delay(200);
+                            await Task.Delay(100);
 
                             // 다음 이미지를 위해 클리어
-                            OriginImage.Source = null;
-                            ConvertImage.Source = null;
-                            GridImage.Source = null;
+                            //OriginImage.Source = null;
+                            //ConvertImage.Source = null;
+                            //GridImage.Source = null;
                         }
                     }
                     catch (Exception ex)

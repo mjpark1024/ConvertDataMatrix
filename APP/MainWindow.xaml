@@ -38,7 +38,7 @@
         <TextBox x:Name="Result" Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="5" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FontSize="30"></TextBox>
         <Label Grid.Row="4" Grid.Column="0" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FontSize="20">결 과 :</Label>
 
-        <Label Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FontSize="20">Origin Imgae</Label>
+        <Label Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FontSize="20">Origin Image</Label>
         <Label Grid.Row="3" Grid.Column="3" Grid.ColumnSpan="3" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FontSize="20">Grid Image</Label>
         <Label Grid.Row="3" Grid.Column="6" Grid.ColumnSpan="3" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FontSize="20">Covert Image</Label>
 
