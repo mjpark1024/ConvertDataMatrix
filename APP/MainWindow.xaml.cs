@@ -48,6 +48,7 @@ namespace APP
                 OriginImage.Source = bitmap;
                 m_BitLoadbmpimage = new Bitmap(diretoryPath);
                 Result.Text = "";
+                GridImage.Source = null;
                 ConvertImage.Source = null;
             }
         }
