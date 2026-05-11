@@ -21,7 +21,6 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-
 namespace APP
 {
     /// <summary>
@@ -30,7 +29,6 @@ namespace APP
     public partial class MainWindow : System.Windows.Window
     {
         Bitmap m_BitLoadbmpimage;
-        Bitmap m_BitConvertImage;
         public MainWindow()
         {
             InitializeComponent();
@@ -72,16 +70,19 @@ namespace APP
         private void btnConvert_Click(object sender, RoutedEventArgs e)
         {
             Mat srcImage = BitmapConverter.ToMat(m_BitLoadbmpimage);
-            Mat m_ConvertImage = new Mat();
+            Mat Cvtimage = new Mat();
+            Mat Gridimage = new Mat();
             double dResolution = Convert.ToDouble(Resolution.Text);
-            var zxresult = DataMatrixConvert.Decode(srcImage, ref m_ConvertImage, dResolution);
+            var zxresult = DataMatrixConvert.Decode(srcImage, ref Cvtimage, ref Gridimage, dResolution);
             if (zxresult != null && zxresult.Trim() == "")
             {
                 Result.Text = "Error";
             }
             else
             {
-                Bitmap temp = BitmapConverter.ToBitmap(m_ConvertImage);
+                Bitmap temp = BitmapConverter.ToBitmap(Gridimage);
+                GridImage.Source = ConvertBitmapToBitmapImage(temp);
+                temp = BitmapConverter.ToBitmap(Cvtimage);
                 ConvertImage.Source = ConvertBitmapToBitmapImage(temp);
                 Result.Text = zxresult;
             }
@@ -107,40 +108,74 @@ namespace APP
                 return bitmapImage;
             }
         }
-        private void btnMultiteste_Click(object sender, RoutedEventArgs e)
+        private async void btnMultiteste_Click(object sender, RoutedEventArgs e)
         {
+            int ReadCount = 0;
+            Percent.Content = "";
             OpenFileDialog openFileDialog = new OpenFileDialog();
             openFileDialog.Filter = "이미지 파일|*.jpg;*.jpeg;*.png;*.bmp;*.gif";
             if (openFileDialog.ShowDialog() == true)
             {
-                string diretoryPath = System.IO.Path.GetDirectoryName(openFileDialog.FileName);
-                DirectoryInfo FolderPathInfo = new DirectoryInfo(diretoryPath);
-                FileInfo[] Files = FolderPathInfo.GetFiles();
+                string directoryPath = System.IO.Path.GetDirectoryName(openFileDialog.FileName);
+                DirectoryInfo FolderPathInfo = new DirectoryInfo(directoryPath);
+                FileInfo[] Files = FolderPathInfo.GetFiles()
+                    .Where(f => f.Extension.ToLower() == ".jpg" ||
+                                f.Extension.ToLower() == ".jpeg" ||
+                                f.Extension.ToLower() == ".png" ||
+                                f.Extension.ToLower() == ".bmp" ||
+                                f.Extension.ToLower() == ".gif")
+                    .ToArray();
+
                 if (Files.Length == 0) return;
-                for (int i = 0; i < Files.Count(); i++)
+
+                foreach (var file in Files)
                 {
-                    string str = Files[i].Name.ToLower();
-                    m_BitLoadbmpimage = new Bitmap(diretoryPath + "\\"+ str);
-                    List<string> id = new List<string>();
-                    Mat srcImage = BitmapConverter.ToMat(m_BitLoadbmpimage);
-                    Mat m_ConvertImage = new Mat();
-                    double dResolution = Convert.ToDouble(Resolution.Text);
-                    var zxresult = DataMatrixConvert.Decode(srcImage, ref m_ConvertImage, dResolution);
-                    if (zxresult != null && zxresult.Trim() == "")
+                    string filePath = System.IO.Path.Combine(directoryPath, file.Name);
+                    try
                     {
-                        Result.Text = "Error";
+                        using (var bitmap = new Bitmap(filePath))
+                        {
+                            Bitmap BitLoadbmpimage = new Bitmap(bitmap); // 복사
+                            OriginImage.Source = ConvertBitmapToBitmapImage(BitLoadbmpimage);
+                            Mat srcImage = BitmapConverter.ToMat(BitLoadbmpimage);
+                            Mat Cvtimage = new Mat();
+                            Mat Gridimage = new Mat();
+                            double dResolution = Convert.ToDouble(Resolution.Text);
+
+                            var zxresult = DataMatrixConvert.Decode(srcImage, ref Cvtimage, ref Gridimage, dResolution);
+
+                            if (zxresult != null && zxresult.Trim() != "")
+                            {
+                                Bitmap temp = BitmapConverter.ToBitmap(Gridimage);
+                                GridImage.Source = ConvertBitmapToBitmapImage(temp);
+                                temp = BitmapConverter.ToBitmap(Cvtimage);
+                                ConvertImage.Source = ConvertBitmapToBitmapImage(temp);
+                                Result.Text = zxresult;
+                                ReadCount++;
+                            }
+                            else
+                            {
+                                Result.Text = "Error";
+                            }
+
+                            // UI 갱신 기회를 주고, 500ms 대기 (UI 스레드 블로킹 없음)
+                            await Task.Delay(200);
+
+                            // 다음 이미지를 위해 클리어
+                            OriginImage.Source = null;
+                            ConvertImage.Source = null;
+                            GridImage.Source = null;
+                        }
                     }
-                    else
+                    catch (Exception ex)
                     {
-                        Bitmap temp = BitmapConverter.ToBitmap(m_ConvertImage);
-                        ConvertImage.Source = ConvertBitmapToBitmapImage(temp);
-                        Result.Text = zxresult;
+                        Result.Text = "이미지 처리 중 오류: " + ex.Message;
+                        await Task.Delay(500);
                     }
-             
-                    Thread.Sleep(500);
-                    OriginImage.Source = null;
-                    ConvertImage.Source = null;
+
                 }
+                double dPercent = (double)ReadCount / (double)Files.Count() * 100;
+                Percent.Content = dPercent.ToString();
             }
         }        
     }

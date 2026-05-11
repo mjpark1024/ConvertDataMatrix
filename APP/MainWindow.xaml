@@ -44,5 +44,8 @@
 
         <TextBox Grid.Row="1" Grid.Column="10" x:Name="Resolution" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FontSize="20">5.5</TextBox>
         <Label Grid.Row="1" Grid.Column="9" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FontSize="18">Resolution</Label>
+
+        <Label Grid.Row="4" Grid.Column="6" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FontSize="20">인식률:</Label>
+        <Label x:Name="Percent" Grid.Row="4" Grid.Column="7" VerticalContentAlignment="Center" HorizontalContentAlignment="Center" FontSize="20"></Label>
     </Grid>
 </Window>

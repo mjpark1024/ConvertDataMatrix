@@ -100,7 +100,7 @@ namespace DataMatrixLib
             }
         };
         static SortedDictionary<float, int> mapPeakInfo;
-        public static string Decode(Mat srcImage, ref Mat DstImg, double Res, int simbol = 0, int ithreshold = -1)
+        public static string Decode(Mat srcImage, ref Mat DstImg, ref Mat CvtImg, double Res, int simbol = 0, int ithreshold = -1)
         {
             try
             {
@@ -235,7 +235,7 @@ namespace DataMatrixLib
                             area = stats.At<int>(j, (int)ConnectedComponentsTypes.Area);
 
                             // 찾은 덩어리 중 큰것부터 작은 것 순으로 검색하여. 정사각형과 유사하고, 사이즈가 적당히 큰 것으로 리턴한다. 큰 사각형 테두리를 찾더라도 더 작은 것이 우선
-                            if ((Math.Abs(width - height) < 20 || (width > height * 1.5 && width < height * 2.5) || (height > width * 1.5 && height < width * 2.5)) && width > MinSizeFilter && height > MinSizeFilter)
+                            if ((Math.Abs(width - height) < 20 || (width > height * 1.3 && width < height * 3) || (height > width * 1.3 && height < width * 3)) && width > MinSizeFilter && height > MinSizeFilter)
                             {
                                 // 라벨링 박스
                                 if (left < iCutSize || top < iCutSize || image.Cols < left + width + (iCutSize) || image.Rows < top + height + (iCutSize)) continue;
@@ -466,6 +466,7 @@ namespace DataMatrixLib
                                     multColum = 1;
                                     multRow = (int)Math.Ceiling((double)(numerator / denominator));
                                 }
+                                CvtImg = CrossLineImg;
                                 Cv2.Resize(CrossLineImg, CrossLineImg, new Size(300 * multColum, 300 * multRow), 0, 0, InterpolationFlags.Linear);
                                 //////////////////////////////////////////////////////
                                 //MatRoiImgBiLine                        
