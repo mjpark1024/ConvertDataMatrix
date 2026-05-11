@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ZXing;
+using static ZXing.Rendering.SvgRenderer;
 
 namespace DataMatrixLib
 {
@@ -309,7 +310,7 @@ namespace DataMatrixLib
                             }
                         }
                     }
-    
+
                     for (int z = 0; z < 10; z++)
                     {
                         bFindFlag = true;
@@ -656,7 +657,7 @@ namespace DataMatrixLib
               );       // Optional offset by which every contour point is shifted. This is useful if the contours are extracted from the image ROI and then they should be analyzed in the whole image context.
 
             // Draw contours 렉트 확인용
-            iSize = contours.Count();            
+            iSize = contours.Count();
         }
         static bool FindHistMeanPeak(Mat img, out int iMeanPeak, int repeatcnt = 0, int iSensitive = 7)
         {
@@ -1283,7 +1284,7 @@ namespace DataMatrixLib
             catch
             { return false; }
         }
-    
+
         public static string RecognitionMatrix(Mat roiMat)
         {
             try
@@ -1332,6 +1333,11 @@ namespace DataMatrixLib
                 Console.WriteLine(ex.ToString());
                 return null;
             }
+        }
+        public static string Decode(Mat srcImage, ref Mat DstImg, double Resolution, int simbol = 0, int ithreshold = -1)
+        {
+            Mat Gridimage = new Mat();
+            return DataMatrixConvert.Decode(srcImage, ref DstImg, ref Gridimage, Resolution);
         }
     }
 }
