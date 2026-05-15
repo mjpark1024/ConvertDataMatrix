@@ -331,13 +331,13 @@ namespace DataMatrixLib
                         {
                             if (ListReverseFlag[k])
                             {
-                                Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, 255);
+                                Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, new Scalar(255));
                                 Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
                                 Cv2.Erode(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
                             }
                             else
                             {
-                                Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, 0);
+                                Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, new Scalar(0));
                                 Cv2.Erode(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
                                 Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
                             }
@@ -346,13 +346,13 @@ namespace DataMatrixLib
                         {
                             if (ListReverseFlag[k])
                             {
-                                Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, 0);
+                                Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, new Scalar(0));
                                 Cv2.Erode(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
                                 Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
                             }
                             else
                             {
-                                Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, 255);
+                                Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, new Scalar(255));
                                 Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
                                 Cv2.Erode(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
                             }
@@ -384,13 +384,13 @@ namespace DataMatrixLib
                                     {
                                         if (ListReverseFlag[k])
                                         {
-                                            Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, 255);
+                                            Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, new Scalar(255));
                                             Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
                                             Cv2.Erode(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
                                         }
                                         else
                                         {
-                                            Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, 0);
+                                            Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, new Scalar(0));
                                             Cv2.Erode(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
                                             Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
                                         }
@@ -399,13 +399,13 @@ namespace DataMatrixLib
                                     {
                                         if (ListReverseFlag[k])
                                         {
-                                            Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, 0);
+                                            Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, new Scalar(0));
                                             Cv2.Erode(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
                                             Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
                                         }
                                         else
                                         {
-                                            Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, 255);
+                                            Cv2.CopyMakeBorder(MatRoiImgBi, MatRoiImgBi, iboraderLength, iboraderLength, iboraderLength, iboraderLength, BorderTypes.Constant, new Scalar(255));
                                             Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
                                             Cv2.Erode(MatRoiImgBi, MatRoiImgBi, mask, new Point(-1, -1), iboraderLength, BorderTypes.Replicate);
                                         }
@@ -468,6 +468,7 @@ namespace DataMatrixLib
                                 }
                                 CvtImg = CrossLineImg;
                                 Cv2.Resize(CrossLineImg, CrossLineImg, new Size(300 * multColum, 300 * multRow), 0, 0, InterpolationFlags.Linear);
+                                Cv2.ImShow("33333", CrossLineImg);
                                 //////////////////////////////////////////////////////
                                 //MatRoiImgBiLine                        
                                 if (!bRetry)
@@ -488,7 +489,7 @@ namespace DataMatrixLib
                                 {
                                     int ix, iy;
                                     //바이너리  IMAGE 생성 
-                                    Mat MCRResult = MCRResultImg.SubMat(new Rect(1, 1, ListEdgePoints[0].Count + 1, ListEdgePoints[1].Count + 1));
+                                    Mat MCRResult = MCRResultImg.SubMat(new Rect(1, 1, ListEdgePoints[0].Count, ListEdgePoints[1].Count));
 
                                     for (int rotate = 0; rotate <= ListEdgePoints[1].Count; rotate++)
                                     {
@@ -497,22 +498,24 @@ namespace DataMatrixLib
                                             if (m_iMCROrigin == 1 || m_iMCROrigin == 2)
                                                 continue;
 
-                                            ix = (int)((ListEdgePoints[1][rotate] / 2) + 0.5);
+                                            ix = (int)((ListEdgePoints[1][rotate] / 2.0) + 0.5);
                                         }
                                         else if (rotate == ListEdgePoints[1].Count)
                                         {
                                             if (m_iMCROrigin == 3 || m_iMCROrigin == 4)
                                                 continue;
 
-                                            ix = (int)((MatRoiImgBi.Rows + ListEdgePoints[1][rotate - 1]) / 2 - 0.5);
+                                            ix = (int)((MatRoiImgBi.Rows + ListEdgePoints[1][rotate - 1]) / 2.0 - 0.5);
                                         }
                                         else
                                         {
                                             if (m_iMCROrigin == 1 || m_iMCROrigin == 2)
-                                                ix = (int)((ListEdgePoints[1][rotate - 1] + ListEdgePoints[1][rotate]) / 2 - 0.5);
+                                                ix = (int)((ListEdgePoints[1][rotate - 1] + ListEdgePoints[1][rotate]) / 2.0 - 0.5);
                                             else
-                                                ix = (int)((ListEdgePoints[1][rotate - 1] + ListEdgePoints[1][rotate]) / 2 + 0.5);
+                                                ix = (int)((ListEdgePoints[1][rotate - 1] + ListEdgePoints[1][rotate]) / 2.0 + 0.5);
                                         }
+
+                                        ix = Math.Max(0, Math.Min(ix, MatRoiImgDot.Rows - 1));
 
                                         byte* dotPixel = (byte*)MatRoiImgDot.Ptr(ix);
                                         byte* mcrPtr = (byte*)MCRResult.Ptr(rotate);
@@ -524,24 +527,26 @@ namespace DataMatrixLib
                                                 if (m_iMCROrigin == 1 || m_iMCROrigin == 3)
                                                     continue;
 
-                                                iy = (int)((ListEdgePoints[0][j] / 2) + 0.5);
+                                                iy = (int)((ListEdgePoints[0][j] / 2.0) + 0.5);
                                             }
                                             else if (j == ListEdgePoints[0].Count)
                                             {
                                                 if (m_iMCROrigin == 2 || m_iMCROrigin == 4)
                                                     continue;
 
-                                                iy = (int)((MatRoiImgBi.Cols + ListEdgePoints[0][j - 1]) / 2 + 0.5);
+                                                iy = (int)((MatRoiImgBi.Cols + ListEdgePoints[0][j - 1]) / 2.0 + 0.5);
                                             }
                                             else
                                             {
-                                                iy = (int)((ListEdgePoints[0][j - 1] + ListEdgePoints[0][j]) / 2 + 0.5);
+                                                iy = (int)((ListEdgePoints[0][j - 1] + ListEdgePoints[0][j]) / 2.0 + 0.5);
                                             }
-
+                                            iy = Math.Max(0, Math.Min(iy, MatRoiImgDot.Cols - 1));
                                             mcrPtr[j] = dotPixel[iy];
                                             dotPixel[iy] = 127;
                                         }
                                     }
+                                    Cv2.ImShow("444444", MCRResult);
+                                    
                                     //가장자리 영역 재구성 (X x X)
                                     //상                            
                                     for (int rotate = 1; rotate < MCRResult.Cols; rotate++)
@@ -549,55 +554,66 @@ namespace DataMatrixLib
                                         if (m_iMCROrigin == 1 || m_iMCROrigin == 2) break;
                                         byte value = MCRResult.At<byte>(0, rotate - 1);
                                         value = (value == 255) ? (byte)0 : (byte)255;
-                                        MCRResult.Set(0, rotate, value);
+                                        //MCRResult.Set(0, rotate, value);
+                                        MCRResult.At<byte>(0, rotate) = value;
                                     }
                                     //하
                                     for (int rotate = 1; rotate < MCRResult.Cols; rotate++)
                                     {
                                         if (m_iMCROrigin == 3 || m_iMCROrigin == 4) break;
                                         byte value = MCRResult.At<byte>(MCRResult.Rows - 1, rotate - 1);
-                                        MCRResult.Set(MCRResult.Rows - 1, rotate, (value == 255) ? (byte)0 : (byte)255);
+                                        //MCRResult.Set(MCRResult.Rows - 1, rotate, (value == 255) ? (byte)0 : (byte)255);
+                                        value = (value == 255) ? (byte)0 : (byte)255;
+                                        MCRResult.At<byte>(MCRResult.Rows - 1, rotate) = value;
                                     }
                                     //좌
                                     for (int rotate = 1; rotate < MCRResult.Rows; rotate++)
                                     {
                                         if (m_iMCROrigin == 1 || m_iMCROrigin == 3) break;
                                         byte value = MCRResult.At<byte>(rotate - 1, 0);
-                                        MCRResult.Set(rotate, 0, (value == 255) ? (byte)0 : (byte)255);
+                                        //MCRResult.Set(rotate, 0, (value == 255) ? (byte)0 : (byte)255);
+                                        value = (value == 255) ? (byte)0 : (byte)255;
+                                        MCRResult.At<byte>(rotate, 0) = value;
                                     }
                                     //우
                                     for (int rotate = 1; rotate < MCRResult.Rows; rotate++)
                                     {
                                         if (m_iMCROrigin == 2 || m_iMCROrigin == 4) break;
                                         byte value = MCRResult.At<byte>(rotate - 1, MCRResult.Cols - 1);
-                                        MCRResult.Set(rotate, MCRResult.Cols - 1, (value == 255) ? (byte)0 : (byte)255);
+                                        //MCRResult.Set(rotate, MCRResult.Cols - 1, (value == 255) ? (byte)0 : (byte)255);
+                                        value = (value == 255) ? (byte)0 : (byte)255;
+                                        MCRResult.At<byte>(rotate, MCRResult.Cols - 1) = value;
                                     }
 
+                                    Rect roiRect;
                                     switch (m_iMCROrigin)
                                     {
                                         case 1:
-                                            MCRResultImg = new Mat(MCRResultImg, new Rect(1, 1, MCRResultImg.Cols - 1, MCRResultImg.Rows - 1));
+                                            roiRect = new Rect(1, 1, MCRResultImg.Cols - 1, MCRResultImg.Rows - 1);
                                             break;
                                         case 2:
-                                            MCRResultImg = new Mat(MCRResultImg, new Rect(0, 1, MCRResultImg.Cols - 1, MCRResultImg.Rows - 1));
+                                            roiRect = new Rect(0, 1, MCRResultImg.Cols - 1, MCRResultImg.Rows - 1);
                                             break;
                                         case 3:
-                                            MCRResultImg = new Mat(MCRResultImg, new Rect(1, 0, MCRResultImg.Cols - 1, MCRResultImg.Rows - 1));
+                                            roiRect = new Rect(1, 0, MCRResultImg.Cols - 1, MCRResultImg.Rows - 1);
                                             break;
                                         case 4:
-                                            MCRResultImg = new Mat(MCRResultImg, new Rect(0, 0, MCRResultImg.Cols - 1, MCRResultImg.Rows - 1));
+                                            roiRect = new Rect(0, 0, MCRResultImg.Cols - 1, MCRResultImg.Rows - 1);
                                             break;
                                         default:
-                                            MCRResultImg = new Mat(MCRResultImg, new Rect(1, 0, MCRResultImg.Cols - 1, MCRResultImg.Rows - 1));
+                                            roiRect = new Rect(1, 0, MCRResultImg.Cols - 1, MCRResultImg.Rows - 1);
                                             break;
                                     }
-                                }
+                                    MCRResultImg = new Mat(MCRResultImg, roiRect).Clone();
+                                    
+                                }                          
                                 Cv2.Resize(MCRResultImg, MCRResultImg, new Size(MCRResultImg.Cols * 10, MCRResultImg.Rows * 10), 0, 0, InterpolationFlags.Nearest);
                                 MCRResultImg.CopyTo(DstImg);
                             }
                         }
                         if (bFindFlag)
                         {
+                            Cv2.ImShow("2222", DstImg);
                             var result = RecognitionMatrix(DstImg);
                             if (result == "")
                             {
