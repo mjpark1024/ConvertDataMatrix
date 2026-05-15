@@ -149,7 +149,6 @@ namespace DataMatrixLib
                 bool AutoSizeChk = true;
                 int iMatrixCnt = 16;
                 int MinSizeFilter = Convert.ToInt32(1600 / Res);
-
                 for (int i = 0; i < 5; i++)
                 {
                     for (int z = 0; z < 10; z++)
@@ -236,7 +235,7 @@ namespace DataMatrixLib
                             area = stats.At<int>(j, (int)ConnectedComponentsTypes.Area);
 
                             // 찾은 덩어리 중 큰것부터 작은 것 순으로 검색하여. 정사각형과 유사하고, 사이즈가 적당히 큰 것으로 리턴한다. 큰 사각형 테두리를 찾더라도 더 작은 것이 우선
-                            if ((Math.Abs(width - height) < 20 || (width > height * 1.3 && width < height * 3) || (height > width * 1.3 && height < width * 3)) && width > MinSizeFilter && height > MinSizeFilter)
+                            if ((Math.Abs(width - height) < 20 || ((double)width > (double)(height * 1.7) && (double)width < (double)(height * 2.5)) || ((double)height > (double)(width * 1.7) && (double)height < (double)(width * 2.5))) && width > MinSizeFilter && height > MinSizeFilter)
                             {
                                 // 라벨링 박스
                                 if (left < iCutSize || top < iCutSize || image.Cols < left + width + (iCutSize) || image.Rows < top + height + (iCutSize)) continue;
@@ -260,9 +259,9 @@ namespace DataMatrixLib
                                 bFind = true;
                             }
                         }
-                        if (bFind && i != 0) break;
+                        //if (bFind && i != 0) break;
                     }
-                    if (bFind && i != 0) break;
+                    //if (bFind && i != 0) break;
                 }
 
 
@@ -276,10 +275,10 @@ namespace DataMatrixLib
                         bFindFlag = false;
                         break;
                     }
-                    if (ListMatRoiImg[k].Rows < 100)// 100pixel 미만인것들은 Resize 한다.
-                    {
-                        Cv2.Resize(ListMatRoiImg[k], ListMatRoiImg[k], new Size(), 3.0, 3.0, InterpolationFlags.Lanczos4);
-                    }
+                    //if (ListMatRoiImg[k].Rows < 100)// 100pixel 미만인것들은 Resize 한다.
+                    //{
+                    //    Cv2.Resize(ListMatRoiImg[k], ListMatRoiImg[k], new Size(), 3.0, 3.0, InterpolationFlags.Lanczos4);
+                    //}
                     else
                     {
                         if (!bRetry)//후보의 노이즈 제거

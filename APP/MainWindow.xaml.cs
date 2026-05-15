@@ -59,6 +59,7 @@ namespace APP
             Mat Gridimage = new Mat();
             double dResolution = Convert.ToDouble(Resolution.Text);
             var zxresult = DataMatrixConvert.Decode(srcImage, ref Cvtimage, ref Gridimage, dResolution);
+            if (zxresult != null && zxresult.Trim() == "") zxresult = DataMatrixConvert.Decode(srcImage, ref Cvtimage, ref Gridimage, dResolution, 0, 80);
             if (zxresult != null && zxresult.Trim() == "")
             {
                 Result.Text = "Error";
@@ -112,7 +113,10 @@ namespace APP
                     .ToArray();
 
                 if (Files.Length == 0) return;
-
+                string Currentpath = System.IO.Directory.GetCurrentDirectory();
+                string ErrorFolderpath = System.IO.Path.Combine(Currentpath, "Error");
+                DirectoryInfo dirInfo = new DirectoryInfo(ErrorFolderpath);
+                if (!dirInfo.Exists) Directory.CreateDirectory(ErrorFolderpath);
                 foreach (var file in Files)
                 {
                     string filePath = System.IO.Path.Combine(directoryPath, file.Name);
@@ -120,15 +124,14 @@ namespace APP
                     {
                         using (var bitmap = new Bitmap(filePath))
                         {
-                            Bitmap BitLoadbmpimage = new Bitmap(bitmap); // 복사
+                            Bitmap BitLoadbmpimage = new Bitmap(bitmap); // 복사                         
                             OriginImage.Source = ConvertBitmapToBitmapImage(BitLoadbmpimage);
                             Mat srcImage = BitmapConverter.ToMat(BitLoadbmpimage);
                             Mat Cvtimage = new Mat();
                             Mat Gridimage = new Mat();
                             double dResolution = Convert.ToDouble(Resolution.Text);
-
                             var zxresult = DataMatrixConvert.Decode(srcImage, ref Cvtimage, ref Gridimage, dResolution);
-
+                            if (zxresult != null && zxresult.Trim() == "") zxresult = DataMatrixConvert.Decode(srcImage, ref Cvtimage, ref Gridimage, dResolution, 0, 80);
                             if (zxresult != null && zxresult.Trim() != "")
                             {
                                 Bitmap temp = BitmapConverter.ToBitmap(Gridimage);
@@ -140,11 +143,13 @@ namespace APP
                             }
                             else
                             {
-                                Result.Text = "Error";
+                                Result.Text = "Error";                        
+                                filePath = System.IO.Path.Combine(ErrorFolderpath, file.Name);
+                                srcImage.ImWrite(filePath);
                             }
 
                             // UI 갱신 기회를 주고, 500ms 대기 (UI 스레드 블로킹 없음)
-                            await Task.Delay(100);
+                            await Task.Delay(50);
 
                             // 다음 이미지를 위해 클리어
                             //OriginImage.Source = null;
