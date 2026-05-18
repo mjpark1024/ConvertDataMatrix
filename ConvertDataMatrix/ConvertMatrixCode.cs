@@ -468,7 +468,6 @@ namespace DataMatrixLib
                                 }
                                 CvtImg = CrossLineImg;
                                 Cv2.Resize(CrossLineImg, CrossLineImg, new Size(300 * multColum, 300 * multRow), 0, 0, InterpolationFlags.Linear);
-                                Cv2.ImShow("33333", CrossLineImg);
                                 //////////////////////////////////////////////////////
                                 //MatRoiImgBiLine                        
                                 if (!bRetry)
@@ -489,8 +488,7 @@ namespace DataMatrixLib
                                 {
                                     int ix, iy;
                                     //바이너리  IMAGE 생성 
-                                    Mat MCRResult = MCRResultImg.SubMat(new Rect(1, 1, ListEdgePoints[0].Count, ListEdgePoints[1].Count));
-
+                                    Mat MCRResult = MCRResultImg.SubMat(new Rect(1, 1, ListEdgePoints[0].Count + 1, ListEdgePoints[1].Count + 1));
                                     for (int rotate = 0; rotate <= ListEdgePoints[1].Count; rotate++)
                                     {
                                         if (rotate == 0)
@@ -545,7 +543,6 @@ namespace DataMatrixLib
                                             dotPixel[iy] = 127;
                                         }
                                     }
-                                    Cv2.ImShow("444444", MCRResult);
                                     
                                     //가장자리 영역 재구성 (X x X)
                                     //상                            
@@ -554,7 +551,6 @@ namespace DataMatrixLib
                                         if (m_iMCROrigin == 1 || m_iMCROrigin == 2) break;
                                         byte value = MCRResult.At<byte>(0, rotate - 1);
                                         value = (value == 255) ? (byte)0 : (byte)255;
-                                        //MCRResult.Set(0, rotate, value);
                                         MCRResult.At<byte>(0, rotate) = value;
                                     }
                                     //하
@@ -562,7 +558,6 @@ namespace DataMatrixLib
                                     {
                                         if (m_iMCROrigin == 3 || m_iMCROrigin == 4) break;
                                         byte value = MCRResult.At<byte>(MCRResult.Rows - 1, rotate - 1);
-                                        //MCRResult.Set(MCRResult.Rows - 1, rotate, (value == 255) ? (byte)0 : (byte)255);
                                         value = (value == 255) ? (byte)0 : (byte)255;
                                         MCRResult.At<byte>(MCRResult.Rows - 1, rotate) = value;
                                     }
@@ -571,7 +566,6 @@ namespace DataMatrixLib
                                     {
                                         if (m_iMCROrigin == 1 || m_iMCROrigin == 3) break;
                                         byte value = MCRResult.At<byte>(rotate - 1, 0);
-                                        //MCRResult.Set(rotate, 0, (value == 255) ? (byte)0 : (byte)255);
                                         value = (value == 255) ? (byte)0 : (byte)255;
                                         MCRResult.At<byte>(rotate, 0) = value;
                                     }
@@ -580,7 +574,6 @@ namespace DataMatrixLib
                                     {
                                         if (m_iMCROrigin == 2 || m_iMCROrigin == 4) break;
                                         byte value = MCRResult.At<byte>(rotate - 1, MCRResult.Cols - 1);
-                                        //MCRResult.Set(rotate, MCRResult.Cols - 1, (value == 255) ? (byte)0 : (byte)255);
                                         value = (value == 255) ? (byte)0 : (byte)255;
                                         MCRResult.At<byte>(rotate, MCRResult.Cols - 1) = value;
                                     }
@@ -613,7 +606,6 @@ namespace DataMatrixLib
                         }
                         if (bFindFlag)
                         {
-                            Cv2.ImShow("2222", DstImg);
                             var result = RecognitionMatrix(DstImg);
                             if (result == "")
                             {
@@ -1309,7 +1301,6 @@ namespace DataMatrixLib
 
                 //Cv2.ImShow("d", roiMat);
                 //Cv2.WaitKey(0);
-
                 var result = zxing_reader.Decode(roiMat.ToBitmap());
                 if (result != null) lstResult.Add(result.Text);
 
