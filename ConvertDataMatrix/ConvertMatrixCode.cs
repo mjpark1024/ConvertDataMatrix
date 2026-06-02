@@ -85,6 +85,17 @@ namespace DataMatrixLib
             }
         }
     }
+    public struct BarCodeInfo
+    {
+        public Mat MatImg;
+        public Rect Roi;
+        public BarCodeInfo(Mat _MatRoi, Rect _Roi)
+        {
+            MatImg = _MatRoi;
+            Roi = _Roi;
+        }
+    }
+
     public static class DataMatrixConvert
     {
         static ZXing.IBarcodeReader zxing_reader = new BarcodeReader()
@@ -101,8 +112,9 @@ namespace DataMatrixLib
             }
         };
         static SortedDictionary<float, int> mapPeakInfo;
-        public static string Decode(Mat srcImage, ref Mat DstImg, ref Mat CvtImg, double Res, int simbol = 0, int ithreshold = -1)
+        public static string Decode(Mat srcImage, ref Mat DstImg, ref Mat CvtImg, out System.Drawing.Point MatrixCodeCenter, double Res, int simbol = 0, int ithreshold = -1)
         {
+            MatrixCodeCenter = new System.Drawing.Point();
             try
             {
                 Mat image = srcImage.Clone();
@@ -137,18 +149,21 @@ namespace DataMatrixLib
                 Mat CrossLineImg = new Mat();
 
                 int iboraderLength = 0;
-                List<Mat> ListMatRoiImg = new List<Mat>();
-                List<Rect> ListFindRect = new List<Rect>();
+                //List<Mat> ListMatRoiImg = new List<Mat>();
+                //List<Rect> ListFindRect = new List<Rect>();
+
+                List<BarCodeInfo> ListMatRoiInfo = new List<BarCodeInfo>();
                 bool bFind = false;
                 bool bReverse = false;
                 List<bool> ListReverseFlag = new List<bool>();
 
                 bool bRetry = false;
                 bool bFindFlag = true;
-                ListMatRoiImg.Clear();
+                ListMatRoiInfo.Clear();
+                //ListMatRoiImg.Clear();
                 bool AutoSizeChk = true;
                 int iMatrixCnt = 16;
-                int MinSizeFilter = Convert.ToInt32(1600 / Res);
+                int MinSizeFilter = Convert.ToInt32(1400 / Res);
                 for (int i = 0; i < 5; i++)
                 {
                     for (int z = 0; z < 10; z++)
@@ -253,8 +268,10 @@ namespace DataMatrixLib
                                 {
                                     continue;
                                 }
-                                ListMatRoiImg.Add(MatRoiImg);
-                                ListFindRect.Add(new Rect(new Point(top, left), new Size(height, width)));
+                                //ListMatRoiImg.Add(MatRoiImg);
+                                //ListFindRect.Add(new Rect(new Point(top, left), new Size(height, width)));
+                                BarCodeInfo temp = new BarCodeInfo(MatRoiImg, new Rect(new Point(left, top), new Size(width, height)));
+                                ListMatRoiInfo.Add(temp);
                                 ListReverseFlag.Add(bReverse);
                                 bFind = true;
                             }
@@ -264,13 +281,13 @@ namespace DataMatrixLib
                     //if (bFind && i != 0) break;
                 }
 
-
-                if (ListMatRoiImg.Count() == 0)
+                if (ListMatRoiInfo.Count() == 0)
+                //if (ListMatRoiImg.Count() == 0)
                     bFindFlag = false;
 
-                for (int k = 0; k < ListMatRoiImg.Count(); k++) //찾은 후보들을 전부 Search
+                for (int k = 0; k < ListMatRoiInfo.Count(); k++) //찾은 후보들을 전부 Search
                 {
-                    if (ListMatRoiImg == null)
+                    if (ListMatRoiInfo == null)
                     {
                         bFindFlag = false;
                         break;
@@ -285,27 +302,27 @@ namespace DataMatrixLib
                         {
                             if (ListReverseFlag[k])
                             {
-                                Cv2.Erode(ListMatRoiImg[k], ListMatRoiImg[k], mask, new Point(-1, -1), 1, BorderTypes.Replicate);
-                                Cv2.Dilate(ListMatRoiImg[k], ListMatRoiImg[k], mask, new Point(-1, -1), 1, BorderTypes.Replicate);
+                                Cv2.Erode(ListMatRoiInfo[k].MatImg, ListMatRoiInfo[k].MatImg, mask, new Point(-1, -1), 1, BorderTypes.Replicate);
+                                Cv2.Dilate(ListMatRoiInfo[k].MatImg, ListMatRoiInfo[k].MatImg, mask, new Point(-1, -1), 1, BorderTypes.Replicate);
 
                             }
                             else
                             {
-                                Cv2.Dilate(ListMatRoiImg[k], ListMatRoiImg[k], mask, new Point(-1, -1), 1, BorderTypes.Replicate);
-                                Cv2.Erode(ListMatRoiImg[k], ListMatRoiImg[k], mask, new Point(-1, -1), 1, BorderTypes.Replicate);
+                                Cv2.Dilate(ListMatRoiInfo[k].MatImg, ListMatRoiInfo[k].MatImg, mask, new Point(-1, -1), 1, BorderTypes.Replicate);
+                                Cv2.Erode(ListMatRoiInfo[k].MatImg, ListMatRoiInfo[k].MatImg, mask, new Point(-1, -1), 1, BorderTypes.Replicate);
                             }
                         }
                         else
                         {
                             if (ListReverseFlag[k])
                             {
-                                Cv2.Dilate(ListMatRoiImg[k], ListMatRoiImg[k], mask, new Point(-1, -1), 1, BorderTypes.Replicate);
-                                Cv2.Erode(ListMatRoiImg[k], ListMatRoiImg[k], mask, new Point(-1, -1), 1, BorderTypes.Replicate);
+                                Cv2.Dilate(ListMatRoiInfo[k].MatImg, ListMatRoiInfo[k].MatImg, mask, new Point(-1, -1), 1, BorderTypes.Replicate);
+                                Cv2.Erode(ListMatRoiInfo[k].MatImg, ListMatRoiInfo[k].MatImg, mask, new Point(-1, -1), 1, BorderTypes.Replicate);
                             }
                             else
                             {
-                                Cv2.Erode(ListMatRoiImg[k], ListMatRoiImg[k], mask, new Point(-1, -1), 1, BorderTypes.Replicate);
-                                Cv2.Dilate(ListMatRoiImg[k], ListMatRoiImg[k], mask, new Point(-1, -1), 1, BorderTypes.Replicate);
+                                Cv2.Erode(ListMatRoiInfo[k].MatImg, ListMatRoiInfo[k].MatImg, mask, new Point(-1, -1), 1, BorderTypes.Replicate);
+                                Cv2.Dilate(ListMatRoiInfo[k].MatImg, ListMatRoiInfo[k].MatImg, mask, new Point(-1, -1), 1, BorderTypes.Replicate);
                             }
                         }
                     }
@@ -317,13 +334,13 @@ namespace DataMatrixLib
                         mapPeakInfo = new SortedDictionary<float, int>();
                         if (ithreshold != -1)//찾은 후보를 고정 threshold로 변환
                         {
-                            Cv2.Threshold(ListMatRoiImg[k], MatRoiImgBi, ithreshold, 255, ThresholdTypes.Binary);
+                            Cv2.Threshold(ListMatRoiInfo[k].MatImg, MatRoiImgBi, ithreshold, 255, ThresholdTypes.Binary);
                             iPeakCnt = -1;
                         }
                         else//찾은 후보를 히스토그램을 구해 가장 높은 Peak 와 그 다음 Peaak의 평균 값으로 threshold
                         {
-                            FindHistMeanPeak(ListMatRoiImg[k], out iMeanPeak);
-                            Cv2.Threshold(ListMatRoiImg[k], MatRoiImgBi, iMeanPeak, 255, ThresholdTypes.Binary);
+                            FindHistMeanPeak(ListMatRoiInfo[k].MatImg, out iMeanPeak);
+                            Cv2.Threshold(ListMatRoiInfo[k].MatImg, MatRoiImgBi, iMeanPeak, 255, ThresholdTypes.Binary);
                         }
                         if (z != 0) Cv2.Dilate(MatRoiImgBi, MatRoiImgBi, mask, new Point(1, 1), z, BorderTypes.Replicate); //마킹 확산
                         iboraderLength = (int)(MatRoiImgBi.Rows / 100); //가장자리에 여백 만들기(여백이 어느정도 있어야함)
@@ -371,7 +388,7 @@ namespace DataMatrixLib
                                 while (OriginMake(MatRoiImgBi.Clone()) ? !FindMCRCnt(MatRoiImgBi, rotate, ref ListEdgePoints, ref iindexChk, ref iCntTmp, ref m_bMCROrigin, ref m_iMCROrigin) : true)
                                 {
                                     iPeakCnt++;
-                                    if (!FindHistMeanPeak(ListMatRoiImg[k], out iMeanPeak, iPeakCnt) || iPeakCnt > 5)
+                                    if (!FindHistMeanPeak(ListMatRoiInfo[k].MatImg, out iMeanPeak, iPeakCnt) || iPeakCnt > 5)
                                     {
                                         bFindFlag = false;
                                         break;
@@ -379,7 +396,7 @@ namespace DataMatrixLib
 
                                     iCntTmp = simbol;
                                     rotate = 0;
-                                    Cv2.Threshold(ListMatRoiImg[k], MatRoiImgBi, iMeanPeak, 255, ThresholdTypes.Binary);
+                                    Cv2.Threshold(ListMatRoiInfo[k].MatImg, MatRoiImgBi, iMeanPeak, 255, ThresholdTypes.Binary);
                                     if (!bRetry)
                                     {
                                         if (ListReverseFlag[k])
@@ -611,6 +628,7 @@ namespace DataMatrixLib
                             {
                                 bFindFlag = false; break;
                             }
+                            MatrixCodeCenter = new System.Drawing.Point(ListMatRoiInfo[k].Roi.X + ListMatRoiInfo[k].Roi.Width / 2, ListMatRoiInfo[k].Roi.Y + ListMatRoiInfo[k].Roi.Height / 2);
                             return result;
                         }
                     }
@@ -622,7 +640,7 @@ namespace DataMatrixLib
 
                     else
                     {
-                        if (k == ListMatRoiImg.Count - 1 && bRetry == false)
+                        if (k == ListMatRoiInfo.Count - 1 && bRetry == false)
                         {
                             bRetry = true;
                             k = -1;
@@ -1343,7 +1361,14 @@ namespace DataMatrixLib
         public static string Decode(Mat srcImage, ref Mat DstImg, double Resolution, int simbol = 0, int ithreshold = -1)
         {
             Mat Gridimage = new Mat();
-            return DataMatrixConvert.Decode(srcImage, ref DstImg, ref Gridimage, Resolution);
+            System.Drawing.Point PointMatrixCodeCenter;
+            return DataMatrixConvert.Decode(srcImage, ref DstImg, ref Gridimage, out PointMatrixCodeCenter, Resolution);
+        }
+
+        public static string Decode(Mat srcImage, ref Mat DstImg, double Resolution, out System.Drawing.Point PointMatrixCodeCenter, int simbol = 0, int ithreshold = -1)
+        {
+            Mat Gridimage = new Mat();
+            return DataMatrixConvert.Decode(srcImage, ref DstImg, ref Gridimage, out PointMatrixCodeCenter, Resolution);
         }
     }
 }

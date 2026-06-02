@@ -57,9 +57,10 @@ namespace APP
             Mat srcImage = BitmapConverter.ToMat(m_BitLoadbmpimage);
             Mat Cvtimage = new Mat();
             Mat Gridimage = new Mat();
+            System.Drawing.Point MatrixCodeCenter = new System.Drawing.Point();
             double dResolution = Convert.ToDouble(Resolution.Text);
-            var zxresult = DataMatrixConvert.Decode(srcImage, ref Cvtimage, ref Gridimage, dResolution);
-            if (zxresult != null && zxresult.Trim() == "") zxresult = DataMatrixConvert.Decode(srcImage, ref Cvtimage, ref Gridimage, dResolution, 0, 80);
+            var zxresult = DataMatrixConvert.Decode(srcImage, ref Cvtimage, ref Gridimage, out MatrixCodeCenter, dResolution);
+            if (zxresult != null && zxresult.Trim() == "") zxresult = DataMatrixConvert.Decode(srcImage, ref Cvtimage, ref Gridimage, out MatrixCodeCenter, dResolution, 0, 80);
             if (zxresult != null && zxresult.Trim() == "")
             {
                 Result.Text = "Error";
@@ -129,9 +130,10 @@ namespace APP
                             Mat srcImage = BitmapConverter.ToMat(BitLoadbmpimage);
                             Mat Cvtimage = new Mat();
                             Mat Gridimage = new Mat();
+                            System.Drawing.Point MatrixCodeCenter = new System.Drawing.Point();
                             double dResolution = Convert.ToDouble(Resolution.Text);
-                            var zxresult = DataMatrixConvert.Decode(srcImage, ref Cvtimage, ref Gridimage, dResolution);
-                            if (zxresult != null && zxresult.Trim() == "") zxresult = DataMatrixConvert.Decode(srcImage, ref Cvtimage, ref Gridimage, dResolution, 0, 80);
+                            var zxresult = DataMatrixConvert.Decode(srcImage, ref Cvtimage, ref Gridimage, out MatrixCodeCenter, dResolution);
+                            if (zxresult != null && zxresult.Trim() == "") zxresult = DataMatrixConvert.Decode(srcImage, ref Cvtimage, ref Gridimage, out MatrixCodeCenter, dResolution, 0, 80);
                             if (zxresult != null && zxresult.Trim() != "")
                             {
                                 Bitmap temp = BitmapConverter.ToBitmap(Gridimage);
