@@ -12,3 +12,4 @@ dump
 db
 *.bak
 log
+x64/

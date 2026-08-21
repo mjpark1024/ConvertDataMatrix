@@ -1,8 +1,10 @@
-﻿using OpenCvSharp;
+﻿using Microsoft.SqlServer.Server;
+using OpenCvSharp;
 using OpenCvSharp.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using ZXing;
@@ -624,9 +626,9 @@ namespace DataMatrixLib
                         if (bFindFlag)
                         {
                             var result = RecognitionMatrix(DstImg);
-                            if (result == "")
+                            if (result == "" || result.Length != 14)
                             {
-                                bFindFlag = false; break;
+                                bFindFlag = false; continue;
                             }
                             MatrixCodeCenter = new System.Drawing.Point(ListMatRoiInfo[k].Roi.X + ListMatRoiInfo[k].Roi.Width / 2, ListMatRoiInfo[k].Roi.Y + ListMatRoiInfo[k].Roi.Height / 2);
                             return result;
@@ -1250,7 +1252,7 @@ namespace DataMatrixLib
                     {
                         foreach (var v in rising)
                         {
-                            if (cnt > mcr_version + 2) break;
+                            if (cnt > mcr_version + 2 || cnt >= pts[i].Length) break;
                             pts[i][cnt++] = v;
                         }
                     }
@@ -1260,7 +1262,7 @@ namespace DataMatrixLib
                     {
                         foreach (var v in falling)
                         {
-                            if (cnt > (MatrixCnt - 1) + 4) break;
+                            if (cnt > (MatrixCnt - 1) + 4 || cnt >= pts[i].Length) break;
                             pts[i][cnt++] = v;
                         }
                     }
@@ -1276,7 +1278,7 @@ namespace DataMatrixLib
 
                     for (int i = 0; i < repeat; i++)
                     {
-                        if (cnts[i] <= j) break;
+                        if (pts[i].Length <= j) break;
                         sum += pts[i][j];
                         cnt++;
                     }
@@ -1306,8 +1308,11 @@ namespace DataMatrixLib
 
                 return true;
             }
-            catch
-            { return false; }
+            catch(Exception e)
+            { 
+                Console.WriteLine(e); 
+                return false;
+            }
         }
 
         public static string RecognitionMatrix(Mat roiMat)
@@ -1316,28 +1321,36 @@ namespace DataMatrixLib
             {
                 List<string> lstResult = new List<string>();
                 string findResult = "";
-
                 //Cv2.ImShow("d", roiMat);
                 //Cv2.WaitKey(0);
+                
                 var result = zxing_reader.Decode(roiMat.ToBitmap());
                 if (result != null) lstResult.Add(result.Text);
+                else
+                {
+                    if (Math.Abs(roiMat.Rows - roiMat.Cols) < 5)
+                    {
+                        var text = LibDmtx.Decode(roiMat.Data, roiMat.Cols, roiMat.Rows, (int)roiMat.Step());
+                        if (text != null) lstResult.Add(text);
+                    }
+                } 
 
                 //flip
-                Mat flipMat = new Mat();
-                if (lstResult.Count == 0)
-                {
-                    for (int i = -1; i < 2; i++)
-                    {
-                        Cv2.Flip(roiMat, flipMat, (FlipMode)i);
-                        ZXing.IBarcodeReader zxing_reader = new BarcodeReader();
-                        result = zxing_reader.Decode(flipMat.ToBitmap());
-                        if (result != null)
-                        {
-                            lstResult.Add(result.Text);
-                            break;
-                        }
-                    }
-                }
+                //Mat flipMat = new Mat();
+                //if (lstResult.Count == 0)
+                //{
+                //    for (int i = -1; i < 2; i++)
+                //    {
+                //        Cv2.Flip(roiMat, flipMat, (FlipMode)i);
+                //        ZXing.IBarcodeReader zxing_reader = new BarcodeReader();
+                //        result = zxing_reader.Decode(flipMat.ToBitmap());
+                //        if (result != null)
+                //        {
+                //            lstResult.Add(result.Text);
+                //            break;
+                //        }
+                //    }
+                //}
 
                 var group = lstResult.GroupBy(i => i);
                 int maxCount = 0;
@@ -1369,6 +1382,51 @@ namespace DataMatrixLib
         {
             Mat Gridimage = new Mat();
             return DataMatrixConvert.Decode(srcImage, ref DstImg, ref Gridimage, out PointMatrixCodeCenter, Resolution);
+        }
+    }
+    public static class LibDmtx
+    {
+        [DllImport("DmtxWrapper.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int DecodeDataMatrix(
+            IntPtr image,
+            int width,
+            int height,
+            int stride,
+            byte[] result,
+            int resultSize);
+
+        public static string Decode(
+            IntPtr image,
+            int width,
+            int height,
+            int stride)
+        {
+            try
+            {
+                byte[] result = new byte[4096];
+                int ret = DecodeDataMatrix(
+                    image,
+                    width,
+                    height,
+                    stride,
+                    result,
+                    result.Length);
+
+                if (ret <= 0)
+                    return null;
+
+                int length = Array.IndexOf(result, (byte)0);
+
+                if (length < 0)
+                    length = result.Length;
+
+                return System.Text.Encoding.ASCII.GetString(result, 0, length);
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine(e);
+                return null;
+            }
         }
     }
 }

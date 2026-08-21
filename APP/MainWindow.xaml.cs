@@ -1,10 +1,12 @@
 ﻿using APP.Properties;
 using DataMatrixLib;
+using Microsoft.SqlServer.Server;
 using Microsoft.Win32;
 using OpenCvSharp;
 using OpenCvSharp.Extensions;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -20,6 +22,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace APP
 {
@@ -59,6 +62,7 @@ namespace APP
             Mat Gridimage = new Mat();
             System.Drawing.Point MatrixCodeCenter = new System.Drawing.Point();
             double dResolution = Convert.ToDouble(Resolution.Text);
+            Stopwatch sw = Stopwatch.StartNew(); // 측정 시작
             var zxresult = DataMatrixConvert.Decode(srcImage, ref Cvtimage, ref Gridimage, out MatrixCodeCenter, dResolution);
             if (zxresult != null && zxresult.Trim() == "") zxresult = DataMatrixConvert.Decode(srcImage, ref Cvtimage, ref Gridimage, out MatrixCodeCenter, dResolution, 0, 80);
             if (zxresult != null && zxresult.Trim() == "")
@@ -67,6 +71,9 @@ namespace APP
             }
             else
             {
+                sw.Stop(); // 측정 정지
+
+                Console.WriteLine($"걸린 시간: {sw.ElapsedMilliseconds} ms");
                 Bitmap temp = BitmapConverter.ToBitmap(Gridimage);
                 GridImage.Source = ConvertBitmapToBitmapImage(temp);
                 temp = BitmapConverter.ToBitmap(Cvtimage);
@@ -136,33 +143,39 @@ namespace APP
                             if (zxresult != null && zxresult.Trim() == "") zxresult = DataMatrixConvert.Decode(srcImage, ref Cvtimage, ref Gridimage, out MatrixCodeCenter, dResolution, 0, 80);
                             if (zxresult != null && zxresult.Trim() != "")
                             {
-                                Bitmap temp = BitmapConverter.ToBitmap(Gridimage);
-                                GridImage.Source = ConvertBitmapToBitmapImage(temp);
-                                temp = BitmapConverter.ToBitmap(Cvtimage);
-                                ConvertImage.Source = ConvertBitmapToBitmapImage(temp);
-                                Result.Text = zxresult;
-                                ReadCount++;
+                                Action a = delegate
+                                {
+                                    Bitmap temp = BitmapConverter.ToBitmap(Gridimage);
+                                    GridImage.Source = ConvertBitmapToBitmapImage(temp);
+                                    temp = BitmapConverter.ToBitmap(Cvtimage);
+                                    ConvertImage.Source = ConvertBitmapToBitmapImage(temp);
+                                    Result.Text = zxresult;
+                                    ReadCount++;
+                                }; this.Dispatcher.Invoke(a);
                             }
                             else
                             {
-                                Result.Text = "Error";                        
-                                filePath = System.IO.Path.Combine(ErrorFolderpath, file.Name);
-                                srcImage.ImWrite(filePath);
+                                Action a = delegate
+                                {
+                                    Result.Text = "Error";                        
+                                    filePath = System.IO.Path.Combine(ErrorFolderpath, file.Name);
+                                    srcImage.ImWrite(filePath);
+                                }; this.Dispatcher.Invoke(a);
                             }
 
                             // UI 갱신 기회를 주고, 500ms 대기 (UI 스레드 블로킹 없음)
                             await Task.Delay(50);
 
                             // 다음 이미지를 위해 클리어
-                            //OriginImage.Source = null;
-                            //ConvertImage.Source = null;
-                            //GridImage.Source = null;
+                            OriginImage.Source = null;
+                            ConvertImage.Source = null;
+                            GridImage.Source = null;
                         }
                     }
                     catch (Exception ex)
                     {
                         Result.Text = "이미지 처리 중 오류: " + ex.Message;
-                        await Task.Delay(500);
+                        //await Task.Delay(500);
                     }
 
                 }
