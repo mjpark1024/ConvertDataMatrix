@@ -188,7 +188,6 @@ copy "$(ProjectDir)libdmtx\dmtx.h" "$(SolutionDir)APP\bin\$(Configuration)\Outpu
     <ClInclude Include="DmtxWrapper.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="DmtxWrapper.cpp" />
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
