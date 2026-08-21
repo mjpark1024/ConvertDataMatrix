@@ -117,6 +117,7 @@
   </Target>
   <PropertyGroup>
     <PostBuildEvent>copy "$(TargetDir)$(TargetName)$(TargetExt)" "$(SolutionDir)\App\bin\$(Configuration)"
-</PostBuildEvent>
+if not exist "$(SolutionDir)APP\bin\$(Configuration)\OutputFile\" mkdir "$(SolutionDir)APP\bin\$(Configuration)\OutputFile"
+copy "$(TargetDir)$(TargetName)$(TargetExt)" "$(SolutionDir)\App\bin\$(Configuration)\OutputFile"</PostBuildEvent>
   </PropertyGroup>
 </Project>

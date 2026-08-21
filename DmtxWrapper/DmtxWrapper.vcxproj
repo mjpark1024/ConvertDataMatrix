@@ -134,7 +134,12 @@
       <Command>copy "$(ProjectDir)\bin\$(Platform)\$(Configuration)\$(TargetName)$(TargetExt)" "$(SolutionDir)APP\bin\$(Configuration)\$(TargetName)$(TargetExt)"
 copy "$(ProjectDir)libdmtx\dmtx.dll" "$(SolutionDir)APP\bin\$(Configuration)\dmtx.dll"
 copy "$(ProjectDir)libdmtx\dmtx.lib" "$(SolutionDir)APP\bin\$(Configuration)\dmtx.lib"
-copy "$(ProjectDir)libdmtx\dmtx.h" "$(SolutionDir)APP\bin\$(Configuration)\dmtx.h"</Command>
+copy "$(ProjectDir)libdmtx\dmtx.h" "$(SolutionDir)APP\bin\$(Configuration)\dmtx.h"
+if not exist "$(SolutionDir)APP\bin\$(Configuration)\OutputFile\" mkdir "$(SolutionDir)APP\bin\$(Configuration)\OutputFile"
+copy "$(ProjectDir)\bin\$(Platform)\$(Configuration)\$(TargetName)$(TargetExt)" "$(SolutionDir)APP\bin\$(Configuration)\OutputFile\$(TargetName)$(TargetExt)"
+copy "$(ProjectDir)libdmtx\dmtx.dll" "$(SolutionDir)APP\bin\$(Configuration)\OutputFile\dmtx.dll"
+copy "$(ProjectDir)libdmtx\dmtx.lib" "$(SolutionDir)APP\bin\$(Configuration)\OutputFile\dmtx.lib"
+copy "$(ProjectDir)libdmtx\dmtx.h" "$(SolutionDir)APP\bin\$(Configuration)\OutputFile\dmtx.h"</Command>
     </PostBuildEvent>
     <Xdcmake>
       <OutputFile>$(OutDir)$(TargetName).xml</OutputFile>
@@ -169,7 +174,12 @@ copy "$(ProjectDir)libdmtx\dmtx.h" "$(SolutionDir)APP\bin\$(Configuration)\dmtx.
       <Command>copy "$(ProjectDir)\bin\$(Platform)\$(Configuration)\$(TargetName)$(TargetExt)" "$(SolutionDir)APP\bin\$(Configuration)\$(TargetName)$(TargetExt)"
 copy "$(ProjectDir)libdmtx\dmtx.dll" "$(SolutionDir)APP\bin\$(Configuration)\dmtx.dll"
 copy "$(ProjectDir)libdmtx\dmtx.lib" "$(SolutionDir)APP\bin\$(Configuration)\dmtx.lib"
-copy "$(ProjectDir)libdmtx\dmtx.h" "$(SolutionDir)APP\bin\$(Configuration)\dmtx.h"</Command>
+copy "$(ProjectDir)libdmtx\dmtx.h" "$(SolutionDir)APP\bin\$(Configuration)\dmtx.h"
+if not exist "$(SolutionDir)APP\bin\$(Configuration)\OutputFile\" mkdir "$(SolutionDir)APP\bin\$(Configuration)\OutputFile"
+copy "$(ProjectDir)\bin\$(Platform)\$(Configuration)\$(TargetName)$(TargetExt)" "$(SolutionDir)APP\bin\$(Configuration)\OutputFile\$(TargetName)$(TargetExt)"
+copy "$(ProjectDir)libdmtx\dmtx.dll" "$(SolutionDir)APP\bin\$(Configuration)\OutputFile\dmtx.dll"
+copy "$(ProjectDir)libdmtx\dmtx.lib" "$(SolutionDir)APP\bin\$(Configuration)\OutputFile\dmtx.lib"
+copy "$(ProjectDir)libdmtx\dmtx.h" "$(SolutionDir)APP\bin\$(Configuration)\OutputFile\dmtx.h"</Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
