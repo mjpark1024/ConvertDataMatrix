@@ -626,7 +626,7 @@ namespace DataMatrixLib
                         if (bFindFlag)
                         {
                             var result = RecognitionMatrix(DstImg);
-                            if (result == "" || result.Length != 14)
+                            if (result == "" || result.Length <= 9)
                             {
                                 bFindFlag = false; continue;
                             }
@@ -1333,7 +1333,7 @@ namespace DataMatrixLib
                         var text = LibDmtx.Decode(roiMat.Data, roiMat.Cols, roiMat.Rows, (int)roiMat.Step());
                         if (text != null) lstResult.Add(text);
                     }
-                } 
+                }
 
                 //flip
                 //Mat flipMat = new Mat();
