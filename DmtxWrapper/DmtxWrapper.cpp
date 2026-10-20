@@ -20,8 +20,16 @@ int DecodeDataMatrix(const unsigned char* image, int width, int height, int stri
         dmtxImageDestroy(&img);
         return -3;
     }
+    DmtxTime timeout = dmtxTimeAdd(dmtxTimeNow(), 100);
+    //DmtxRegion* reg = dmtxRegionFindNext(dec, &timeout);
+    DmtxScanConstraint constraint;
+    constraint.maxTimeout = &timeout;
 
-    DmtxRegion* reg = dmtxRegionFindNext(dec, nullptr);
+    // 최대 반복 스캔 횟수를 100회로 제한
+    constraint.maxIterations = 50;
+    constraint.iterations = 0;
+    constraint.stopCause = DmtxScanIterLimit;
+    DmtxRegion* reg = dmtxRegionFindNextDeterministic(dec, &constraint);
     if (reg == nullptr)
     {
         dmtxDecodeDestroy(&dec);

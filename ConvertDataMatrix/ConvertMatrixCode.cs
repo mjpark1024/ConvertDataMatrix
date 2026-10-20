@@ -341,6 +341,12 @@ namespace DataMatrixLib
                         }
                         else//찾은 후보를 히스토그램을 구해 가장 높은 Peak 와 그 다음 Peaak의 평균 값으로 threshold
                         {
+                            if (Res < 20.0)/////저배율에서 해당 처리를 하면 안됨
+                            {////밝은 픽셀 주변 블러 제거를 위해서 
+                                Cv2.GaussianBlur(ListMatRoiInfo[k].MatImg, ListMatRoiInfo[k].MatImg, new Size(-1, -1), 3);
+                                Cv2.Erode(ListMatRoiInfo[k].MatImg, ListMatRoiInfo[k].MatImg, mask, new Point(-1, -1), 3, BorderTypes.Replicate);
+                                Cv2.Dilate(ListMatRoiInfo[k].MatImg, ListMatRoiInfo[k].MatImg, mask, new Point(-1, -1), 3, BorderTypes.Replicate);
+                            }
                             FindHistMeanPeak(ListMatRoiInfo[k].MatImg, out iMeanPeak);
                             Cv2.Threshold(ListMatRoiInfo[k].MatImg, MatRoiImgBi, iMeanPeak, 255, ThresholdTypes.Binary);
                         }
@@ -1317,6 +1323,8 @@ namespace DataMatrixLib
 
         public static string RecognitionMatrix(Mat roiMat)
         {
+            if (roiMat.Rows < 100 || roiMat.Cols < 100) 
+                return "";
             try
             {
                 List<string> lstResult = new List<string>();
@@ -1328,11 +1336,8 @@ namespace DataMatrixLib
                 if (result != null) lstResult.Add(result.Text);
                 else
                 {
-                    if (Math.Abs(roiMat.Rows - roiMat.Cols) < 5)
-                    {
-                        var text = LibDmtx.Decode(roiMat.Data, roiMat.Cols, roiMat.Rows, (int)roiMat.Step());
-                        if (text != null) lstResult.Add(text);
-                    }
+                    var text = LibDmtx.Decode(roiMat.Data, roiMat.Cols, roiMat.Rows, (int)roiMat.Step());
+                    if (text != null) lstResult.Add(text);
                 }
 
                 //flip
