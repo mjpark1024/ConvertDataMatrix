@@ -26,7 +26,7 @@ int DecodeDataMatrix(const unsigned char* image, int width, int height, int stri
     constraint.maxTimeout = &timeout;
 
     // 최대 반복 스캔 횟수를 100회로 제한
-    constraint.maxIterations = 50;
+    constraint.maxIterations = 100;
     constraint.iterations = 0;
     constraint.stopCause = DmtxScanIterLimit;
     DmtxRegion* reg = dmtxRegionFindNextDeterministic(dec, &constraint);

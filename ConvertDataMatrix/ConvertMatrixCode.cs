@@ -1,14 +1,11 @@
-﻿using Microsoft.SqlServer.Server;
-using OpenCvSharp;
+﻿using OpenCvSharp;
 using OpenCvSharp.Extensions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using ZXing;
-using static ZXing.Rendering.SvgRenderer;
 
 namespace DataMatrixLib
 {
@@ -165,7 +162,7 @@ namespace DataMatrixLib
                 //ListMatRoiImg.Clear();
                 bool AutoSizeChk = true;
                 int iMatrixCnt = 16;
-                int MinSizeFilter = Convert.ToInt32(1400 / Res);
+                int MinSizeFilter = Convert.ToInt32(1650 / Res);////실제 크기는 1693 x 1693 
                 for (int i = 0; i < 5; i++)
                 {
                     for (int z = 0; z < 10; z++)
@@ -632,7 +629,19 @@ namespace DataMatrixLib
                         if (bFindFlag)
                         {
                             var result = RecognitionMatrix(DstImg);
-                            if (result == "" || result.Length <= 9)
+                            if (result == null || result == "") { bFindFlag = false; continue; }
+                            bool bMisMatch = false;
+                            if (Regex.IsMatch(result, @"\s"))
+                            {
+                                if (!Regex.IsMatch(result, @"^[A-Z0-9]{9}\s[A-Z0-9]{4}$"))////내부 마킹 조건
+                                    bMisMatch = true;
+                            }
+                            else
+                            {
+                                if (!Regex.IsMatch(result, @"^[A-Z0-9]{10,}$"))////고객사 마킹 조건
+                                    bMisMatch = true;
+                            }
+                            if (bMisMatch)
                             {
                                 bFindFlag = false; continue;
                             }
@@ -1331,7 +1340,7 @@ namespace DataMatrixLib
                 string findResult = "";
                 //Cv2.ImShow("d", roiMat);
                 //Cv2.WaitKey(0);
-                
+
                 var result = zxing_reader.Decode(roiMat.ToBitmap());
                 if (result != null) lstResult.Add(result.Text);
                 else
@@ -1380,13 +1389,13 @@ namespace DataMatrixLib
         {
             Mat Gridimage = new Mat();
             System.Drawing.Point PointMatrixCodeCenter;
-            return DataMatrixConvert.Decode(srcImage, ref DstImg, ref Gridimage, out PointMatrixCodeCenter, Resolution);
+            return DataMatrixConvert.Decode(srcImage, ref DstImg, ref Gridimage, out PointMatrixCodeCenter, Resolution, 0, ithreshold);
         }
 
         public static string Decode(Mat srcImage, ref Mat DstImg, double Resolution, out System.Drawing.Point PointMatrixCodeCenter, int simbol = 0, int ithreshold = -1)
         {
             Mat Gridimage = new Mat();
-            return DataMatrixConvert.Decode(srcImage, ref DstImg, ref Gridimage, out PointMatrixCodeCenter, Resolution);
+            return DataMatrixConvert.Decode(srcImage, ref DstImg, ref Gridimage, out PointMatrixCodeCenter, Resolution, 0, ithreshold);
         }
     }
     public static class LibDmtx
